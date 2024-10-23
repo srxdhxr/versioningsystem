@@ -99,7 +99,7 @@ jobs:
                   // Simulate a dropdown with checkboxes for version bumps
                   comment += `- \`${step}\`: \`${tag}\`\n`;
                   comment += '  Select version bump type:\n';
-                  comment += '    - [ ] PATCH (default)\n';
+                  comment += '    - [ ] PATCH\n';
                   comment += '    - [ ] MINOR\n';
                   comment += '    - [ ] MAJOR\n';
                 });
