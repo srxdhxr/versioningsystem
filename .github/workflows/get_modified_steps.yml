@@ -1,9 +1,9 @@
 name: Detect Modified Steps
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    branches: [ main ]
+
 
 jobs:
   check-modified-folders:
@@ -32,6 +32,7 @@ jobs:
 
           # Get the list of changed files in the 'flows/steps' folder and their parent directories
           MODIFIED_FOLDERS=$(git diff --name-only $BASE HEAD flows/steps/ | cut -d'/' -f2 | sort | uniq)
+
 
           # Print the folders for debug purposes
           echo "Modified folders: $MODIFIED_FOLDERS"
