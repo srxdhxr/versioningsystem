@@ -98,7 +98,7 @@ jobs:
                 tags.forEach(([step, tag]) => {
                   // Simulate a dropdown with checkboxes for version bumps
                   comment += `- \`${step}\`: \`${tag}\`\n`;
-                  comment += 'RELEASE TYPE: [PATCH]'
+                  comment += 'RELEASE TYPE: [PATCH]\n'
                 });
               } else {
                 comment += '_No matching tags found_\n';
