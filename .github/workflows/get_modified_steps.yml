@@ -102,7 +102,8 @@ jobs:
                   const nextPatchVersion = `${major}.${minor}.${patch + 1}`;
                   
                   // Format the output
-                  comment += `- \`${step}\` | [\`${currentTag}`\] -> [\`${nextPatchVersion}\`]\n`;
+                  comment += `- \`${step}\` | [\`${currentTag}\`] -> [\`${nextPatchVersion}\`]\n`;
+
                 });
               } else {
                 comment += '_No matching tags found_\n';
