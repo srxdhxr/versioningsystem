@@ -33,7 +33,7 @@ jobs:
           fi
           
           # Convert modified folders into a properly formatted JSON array
-          FOLDERS_JSON=$(printf '%s\n' "$MODIFIED_FOLDERS" | jq -R . | jq -s .)
+          FOLDERS_JSON=$(printf '%s ' "$MODIFIED_FOLDERS" | jq -R . | jq -s .)
 
           # Output the folders as JSON to GitHub Actions output
           echo "folders=${FOLDERS_JSON}" >> $GITHUB_OUTPUT
