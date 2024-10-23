@@ -1,45 +1,104 @@
-name: Detect Modified Steps
-
+name: detect-modified-steps
 on:
   pull_request:
     branches: [ main ]
-
+    paths:
+      - 'flows/steps/**'
 
 jobs:
   check-modified-folders:
     runs-on: ubuntu-latest
-
+    permissions:
+      pull-requests: write
+      contents: read
+    
     steps:
-      # Step 1: Check out the repository
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      # Step 2: Get the list of modified or new folders within 'flows/steps'
-      - name: Find modified folders
-        id: modified_folders
+      - name: Find modified or newly added steps
+        id: modified-steps
         run: |
-          # Handle the case where this is the first commit
-          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-            git fetch --prune --unshallow
+          MODIFIED_FOLDERS=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} flows/steps/ | cut -d'/' -f3 | sort | uniq | grep -v '^$' || true)
+          
+          if [ -z "$MODIFIED_FOLDERS" ]; then
+            echo "folders=[]" >> $GITHUB_OUTPUT
+            echo "No modified folders found"
+            exit 0
           fi
+          
+          FOLDERS_JSON=$(printf '%s\n' $MODIFIED_FOLDERS | jq -R -s 'split("\n") | map(select(length > 0))')
+          echo "folders=${FOLDERS_JSON}" >> $GITHUB_OUTPUT
+          echo "DEBUG: Modified folders: ${FOLDERS_JSON}"
 
-          # Check if there is a previous commit; if not, compare to an empty tree
-          if git rev-parse HEAD^ >/dev/null 2>&1; then
-            BASE=HEAD^
-          else
-            BASE=$(git hash-object -t tree /dev/null)
-          fi
+      - name: Set up Python
+        if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
-          # Get the list of changed files in the 'flows/steps' folder and extract the subfolder names (e.g., step1, step2)
-          MODIFIED_FOLDERS=$(git diff --name-only $BASE HEAD flows/steps/ | cut -d'/' -f3 | sort | uniq)
-
-          # Print the folders for debug purposes
-          echo "Modified step folders: $MODIFIED_FOLDERS"
-
-          # Save the modified folders as output for use in other steps
-          echo "::set-output name=folders::$MODIFIED_FOLDERS"
-
-      # Step 3: Use the modified folders (optional step for future tasks)
-      - name: List modified folders
+      - name: Install Python dependencies
+        if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
         run: |
-          echo "Modified step folders: ${{ steps.modified_folders.outputs.folders }}"
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Process Docker tags
+        if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
+        id: docker-tags
+        run: |
+          # Run Python script and capture output
+          TAGS_OUTPUT=$(python .github/scripts/docker_tags.py \
+            '${{ steps.modified-folders.outputs.folders }}' \
+            '${{ secrets.DOCKER_USERNAME }}' \
+            '${{ secrets.DOCKER_PWD }}')
+          
+          # Save output to GITHUB_OUTPUT
+          echo "tags=$TAGS_OUTPUT" >> $GITHUB_OUTPUT
+          echo "DEBUG: Tags output: $TAGS_OUTPUT"
+
+      - name: Create PR Comment
+        if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            try {
+              const folders = ${{ steps.modified-folders.outputs.folders }};
+              const tags = ${{ steps.docker-tags.outputs.tags || '[]' }};
+              
+              let comment = '## Modified Steps Check\n\n';
+              
+              // Add folders section
+              comment += '### Modified Folders:\n';
+              if (folders && folders.length > 0) {
+                folders.forEach(folder => {
+                  comment += `- \`${folder}\`\n`;
+                });
+              } else {
+                comment += '_No modified folders found_\n';
+              }
+              
+              // Add tags section
+              comment += '\n### Steps and Tags:\n';
+              if (tags && tags.length > 0) {
+                tags.forEach(([step, tag]) => {
+                  comment += `- \`${step}\`: \`${tag}\`\n`;
+                });
+              } else {
+                comment += '_No matching tags found_\n';
+              }
+              
+              comment += '\n⚠️ Please review these changes carefully before merging.';
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            } catch (error) {
+              core.setFailed(`Action failed with error: ${error}`);
+              console.log('Error details:', error);
+            }
