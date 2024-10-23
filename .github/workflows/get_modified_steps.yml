@@ -44,77 +44,79 @@ jobs:
         id: find-images
         shell: bash
         run: |
-          # Initialize empty array
-          MATCHING_IMAGES=()
+          # Initialize empty array for results
+          declare -a MATCHING_IMAGES
           
-          # Safely parse the JSON array from previous step
+          # Process folders from JSON array
           FOLDERS=$(echo '${{ steps.modified-folders.outputs.folders }}' | jq -r '.[]' 2>/dev/null || echo '')
           
-          # Exit early if no folders
-          if [ -z "$FOLDERS" ]; then
-            echo "matching_images=[]" >> $GITHUB_OUTPUT
-            echo "No folders to process"
-            exit 0
-          fi
-          
-          # Process each folder
           while IFS= read -r folder; do
-            # Skip empty folder names
             [ -z "$folder" ] && continue
             
-            IMAGE_NAME="${{ secrets.DOCKER_USER }}/$folder"
+            IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/$folder"
             echo "Checking image: $IMAGE_NAME"
             
-            # Use Docker Hub API to find latest tag with error handling
-            LATEST_TAG=$(curl -s -f -H "Authorization: Bearer ${{ secrets.DOCKER_PWD }}" \
-              "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USER }}/$folder/tags?page_size=1&ordering=last_updated" \
+            LATEST_TAG=$(curl -s -H "Authorization: Bearer ${{ secrets.DOCKER_PWD }}" \
+              "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USERNAME }}/$folder/tags?page_size=1&ordering=last_updated" \
               | jq -r '.results[0].name // empty' 2>/dev/null || echo '')
             
             if [ -n "$LATEST_TAG" ]; then
               MATCHING_IMAGES+=("$IMAGE_NAME:$LATEST_TAG")
               echo "Found image: $IMAGE_NAME:$LATEST_TAG"
-            else
-              echo "No tags found for $IMAGE_NAME"
             fi
           done <<< "$FOLDERS"
           
-          # Convert array to JSON safely
+          # Create properly escaped JSON array
           if [ ${#MATCHING_IMAGES[@]} -eq 0 ]; then
             echo "matching_images=[]" >> $GITHUB_OUTPUT
           else
-            IMAGES_JSON=$(printf '%s\n' "${MATCHING_IMAGES[@]}" | jq -R -s 'split("\n") | map(select(length > 0))')
-            echo "matching_images=$IMAGES_JSON" >> $GITHUB_OUTPUT
+            # Convert array to JSON and escape special characters
+            IMAGES_JSON=$(printf '%s\n' "${MATCHING_IMAGES[@]}" | jq -R . | jq -s .)
+            echo "matching_images=${IMAGES_JSON}" >> $GITHUB_OUTPUT
           fi
           
-          # For debugging
-          echo "Number of matching images: ${#MATCHING_IMAGES[@]}"
+          echo "DEBUG: Final images JSON: ${IMAGES_JSON:-[]}"
 
       - name: Create PR Comment
-        if: steps.modified-folders.outputs.folders != '[]'
+        if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
         uses: actions/github-script@v6
         with:
           script: |
-            const folders = ${{ steps.modified-folders.outputs.folders }};
-            const images = ${{ steps.find-images.outputs.matching_images }};
-            
-            let comment = '## Modified Steps Check\n\n';
-            comment += '### Modified Folders:\n';
-            folders.forEach(folder => {
-              comment += `- \`${folder}\`\n`;
-            });
-            
-            if (images && images.length > 0) {
-              comment += '\n### Matching Docker Images:\n';
-              images.forEach(image => {
-                comment += `- \`${image}\`\n`;
+            try {
+              const folders = ${{ steps.modified-folders.outputs.folders }};
+              const images = ${{ steps.find-images.outputs.matching_images || '[]' }};
+              
+              let comment = '## Modified Steps Check\n\n';
+              
+              // Add folders section
+              comment += '### Modified Folders:\n';
+              if (folders && folders.length > 0) {
+                folders.forEach(folder => {
+                  comment += `- \`${folder}\`\n`;
+                });
+              } else {
+                comment += '_No modified folders found_\n';
+              }
+              
+              // Add images section
+              comment += '\n### Docker Images:\n';
+              if (images && images.length > 0) {
+                images.forEach(image => {
+                  comment += `- \`${image}\`\n`;
+                });
+              } else {
+                comment += '_No matching Docker images found_\n';
+              }
+              
+              comment += '\n⚠️ Please review these changes carefully before merging.';
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
               });
+            } catch (error) {
+              core.setFailed(`Action failed with error: ${error}`);
+              console.log('Error details:', error);
             }
-            
-            comment += '\n⚠️ Please review these changes carefully before merging.';
-            
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: comment
-            });
