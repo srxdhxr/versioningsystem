@@ -105,7 +105,7 @@ jobs:
                   comment += `- \`${step}\` | [${currentTag}] -> [${nextPatchVersion}]\n`;
                 });
               } else {
-                comment += '_No matching tags found_\n';
+                comment += '- \`${step}\` |\n';
               }
               
               comment += '\n⚠️ Please review these changes carefully before merging. ';
