@@ -1,0 +1,104 @@
+name: Detect Modified Steps
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'flows/steps/**'  # Only trigger on changes in steps directory
+
+jobs:
+  check-modified-folders:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for proper diff
+      
+      - name: Find modified folders
+        id: modified-folders
+        run: |
+          # Get modified folders in steps directory
+          MODIFIED_FOLDERS=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} flows/steps/ | cut -d'/' -f3 | sort | uniq)
+          
+          # Convert to JSON array for better handling
+          FOLDERS_JSON=$(echo "$MODIFIED_FOLDERS" | jq -R -s -c 'split("\n")[:-1]')
+          echo "folders=$FOLDERS_JSON" >> $GITHUB_OUTPUT
+          
+          # For debugging
+          echo "Modified folders: $FOLDERS_JSON"
+
+      - name: Login to Docker Hub
+        if: steps.modified-folders.outputs.folders != '[]'
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PWD }}
+
+      - name: Get matching Docker images
+        if: steps.modified-folders.outputs.folders != '[]'
+        id: find-images
+        run: |
+          MATCHING_IMAGES=()
+          
+          # Parse the JSON array of folders
+          FOLDERS=$(echo '${{ steps.modified-folders.outputs.folders }}' | jq -r '.[]')
+          
+          for folder in $FOLDERS; do
+            # Skip empty folder names
+            [ -z "$folder" ] && continue
+            
+            IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/$folder"
+            echo "Checking image: $IMAGE_NAME"
+            
+            # Use Docker Hub API to find latest tag
+            LATEST_TAG=$(curl -s -H "Authorization: Bearer ${{ secrets.DOCKER_PWD }}" \
+              "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USERNAME }}/$folder/tags?page_size=1&ordering=last_updated" \
+              | jq -r '.results[0].name')
+            
+            if [ "$LATEST_TAG" != "null" ] && [ -n "$LATEST_TAG" ]; then
+              MATCHING_IMAGES+=("$IMAGE_NAME:$LATEST_TAG")
+              echo "Found image: $IMAGE_NAME:$LATEST_TAG"
+            fi
+          done
+          
+          # Convert array to JSON
+          IMAGES_JSON=$(printf '%s\n' "${MATCHING_IMAGES[@]}" | jq -R -s -c 'split("\n")[:-1]')
+          echo "matching_images=$IMAGES_JSON" >> $GITHUB_OUTPUT
+          
+          # For debugging
+          echo "Matching images: $IMAGES_JSON"
+
+      - name: Create PR Comment
+        if: steps.modified-folders.outputs.folders != '[]'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const folders = ${{ steps.modified-folders.outputs.folders }};
+            const images = ${{ steps.find-images.outputs.matching_images }};
+            
+            let comment = '## Modified Steps Check\n\n';
+            comment += '### Modified Folders:\n';
+            folders.forEach(folder => {
+              comment += `- \`${folder}\`\n`;
+            });
+            
+            if (images && images.length > 0) {
+              comment += '\n### Matching Docker Images:\n';
+              images.forEach(image => {
+                comment += `- \`${image}\`\n`;
+              });
+            }
+            
+            comment += '\n⚠️ Please review these changes carefully before merging.';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
