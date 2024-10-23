@@ -24,26 +24,16 @@ jobs:
           fi
           MODIFIED_FOLDERS=$(git diff --name-only $BASE HEAD flows/steps/ | cut -d'/' -f3 | sort | uniq)
           echo "Modified step folders: $MODIFIED_FOLDERS"
-          if [ -n "$MODIFIED_FOLDERS" ]; then
-            COMMENT="### Modified Steps\n\nThe following steps were modified in this PR:\n"
-            while IFS= read -r folder; do
-              if [ -n "$folder" ]; then
-                COMMENT="${COMMENT}\n- ${folder}"
-              fi
-            done <<< "$MODIFIED_FOLDERS"
-          else
-            COMMENT="### Modified Steps\n\nNo steps were modified in this PR."
-          fi
-          COMMENT="${COMMENT//'%'/'%25'}"
-          COMMENT="${COMMENT//$'\n'/'%0A'}"
-          COMMENT="${COMMENT//$'\r'/'%0D'}"
-          echo "comment=$COMMENT" >> $GITHUB_OUTPUT
-          echo "folders=$MODIFIED_FOLDERS" >> $GITHUB_OUTPUT
+          # Save the modified folders as output for use in other steps
+          echo "::set-output name=folders::$MODIFIED_FOLDERS"
 
-      - name: Comment on PR
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Create Comment
+        if: steps.modified_folders.outputs.changes != '[]'
         run: |
-          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          COMMENT="${{ steps.modified_folders.outputs.comment }}"
-          gh pr comment $PR_NUMBER --body "$COMMENT"
+          # Use GitHub API to create a comment on the PR
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          COMMENT="Your checklist comment here"
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          COMMENT_URL="https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
+      
+          curl -s -H "Authorization: token ${GITHUB_TOKEN}" -X POST $COMMENT_URL -d "{\"body\":\"$COMMENT\"}"
