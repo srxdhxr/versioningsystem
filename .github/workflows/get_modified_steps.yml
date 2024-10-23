@@ -27,16 +27,17 @@ jobs:
            # Join the modified folder names into a single space-separated string
           MODIFIED_FOLDERS_JOINED=$(echo "$MODIFIED_FOLDERS" | tr '\n' ' ')
 
-          # Print the modified files for debugging
-          echo "DEBUG: Modified files: $(git diff --name-only $BASE HEAD flows/steps/)"
-          echo "DEBUG: Extracted folder names: $MODIFIED_FOLDERS"
-
-          # Print the modified folders
-          echo "Modified step folders: $MODIFIED_FOLDERS_JOINED"
-
           # Save the modified folders as output for use in other steps
           echo "::set-output name=folders::$MODIFIED_FOLDERS_JOINED"
 
+
+      - name: Login to Docker
+        run: |
+          echo "${{ secrets.DOCKER_PWD }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+      - name: Get all Docker Images
+        run: |
+          docker images
+          
       - name: Create Comment
         if: steps.modified_folders.outputs.changes != '[]'
         run: |
