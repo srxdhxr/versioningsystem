@@ -40,38 +40,54 @@ jobs:
           password: ${{ secrets.DOCKER_PWD }}
 
       - name: Get matching Docker images
-        if: steps.modified-folders.outputs.folders != '[]'
+        if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
         id: find-images
+        shell: bash
         run: |
+          # Initialize empty array
           MATCHING_IMAGES=()
           
-          # Parse the JSON array of folders
-          FOLDERS=$(echo '${{ steps.modified-folders.outputs.folders }}' | jq -r '.[]')
+          # Safely parse the JSON array from previous step
+          FOLDERS=$(echo '${{ steps.modified-folders.outputs.folders }}' | jq -r '.[]' 2>/dev/null || echo '')
           
-          for folder in $FOLDERS; do
+          # Exit early if no folders
+          if [ -z "$FOLDERS" ]; then
+            echo "matching_images=[]" >> $GITHUB_OUTPUT
+            echo "No folders to process"
+            exit 0
+          fi
+          
+          # Process each folder
+          while IFS= read -r folder; do
             # Skip empty folder names
             [ -z "$folder" ] && continue
             
-            IMAGE_NAME="${{ secrets.DOCKER_USER }}/$folder"
+            IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/$folder"
             echo "Checking image: $IMAGE_NAME"
             
-            # Use Docker Hub API to find latest tag
-            LATEST_TAG=$(curl -s -H "Authorization: Bearer ${{ secrets.DOCKER_PWD }}" \
+            # Use Docker Hub API to find latest tag with error handling
+            LATEST_TAG=$(curl -s -f -H "Authorization: Bearer ${{ secrets.DOCKER_PWD }}" \
               "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USERNAME }}/$folder/tags?page_size=1&ordering=last_updated" \
-              | jq -r '.results[0].name')
+              | jq -r '.results[0].name // empty' 2>/dev/null || echo '')
             
-            if [ "$LATEST_TAG" != "null" ] && [ -n "$LATEST_TAG" ]; then
+            if [ -n "$LATEST_TAG" ]; then
               MATCHING_IMAGES+=("$IMAGE_NAME:$LATEST_TAG")
               echo "Found image: $IMAGE_NAME:$LATEST_TAG"
+            else
+              echo "No tags found for $IMAGE_NAME"
             fi
-          done
+          done <<< "$FOLDERS"
           
-          # Convert array to JSON
-          IMAGES_JSON=$(printf '%s\n' "${MATCHING_IMAGES[@]}" | jq -R -s -c 'split("\n")[:-1]')
-          echo "matching_images=$IMAGES_JSON" >> $GITHUB_OUTPUT
+          # Convert array to JSON safely
+          if [ ${#MATCHING_IMAGES[@]} -eq 0 ]; then
+            echo "matching_images=[]" >> $GITHUB_OUTPUT
+          else
+            IMAGES_JSON=$(printf '%s\n' "${MATCHING_IMAGES[@]}" | jq -R -s 'split("\n") | map(select(length > 0))')
+            echo "matching_images=$IMAGES_JSON" >> $GITHUB_OUTPUT
+          fi
           
           # For debugging
-          echo "Matching images: $IMAGES_JSON"
+          echo "Number of matching images: ${#MATCHING_IMAGES[@]}"
 
       - name: Create PR Comment
         if: steps.modified-folders.outputs.folders != '[]'
