@@ -32,7 +32,7 @@ jobs:
         run: |
           # Use GitHub API to create a comment on the PR
           PR_NUMBER=${{ github.event.pull_request.number }}
-          COMMENT="Your checklist comment here"
+          COMMENT="Your checklist comment here \n ${{ steps.modified_folders.outputs.folders }}"
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           COMMENT_URL="https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
       
