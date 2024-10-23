@@ -3,7 +3,8 @@ on:
   pull_request:
     branches: [ main ]
     paths:
-      - 'flows/steps/**'
+      - 'flows/steps/**'  
+
 
 jobs:
   check-modified-folders:
@@ -16,7 +17,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
 
       - name: Find modified or newly added steps
         id: modified-steps
@@ -66,6 +66,7 @@ jobs:
           script: |
             try {
               const folders = ${{ steps.modified-folders.outputs.folders }};
+
               const tags = ${{ steps.docker-tags.outputs.tags || '[]' }};
               
               let comment = '## Modified Steps Check\n\n';
@@ -80,6 +81,7 @@ jobs:
                 comment += '_No modified folders found_\n';
               }
               
+
               // Add tags section
               comment += '\n### Steps and Tags:\n';
               if (tags && tags.length > 0) {
