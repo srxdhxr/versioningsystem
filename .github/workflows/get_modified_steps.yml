@@ -66,16 +66,22 @@ jobs:
             fi
           done <<< "$FOLDERS"
           
-          # Create properly escaped JSON array
-          if [ ${#MATCHING_IMAGES[@]} -eq 0 ]; then
-            echo "matching_images=[]" >> $GITHUB_OUTPUT
+          # Create JSON array of arrays using jq
+           if [ -s "$temp_file" ]; then
+            # Convert file content to JSON array of arrays
+            STEPS_JSON=$(cat "$temp_file" | jq -R -s 'split("\n")[:-1] | map(fromjson)')
+            echo "steps=${STEPS_JSON}" >> $GITHUB_OUTPUT
+            echo "DEBUG: Steps and tags: ${STEPS_JSON}"
           else
-            # Convert array to JSON and escape special characters
-            IMAGES_JSON=$(printf '%s\n' "${MATCHING_IMAGES[@]}" | jq -R . | jq -s .)
-            echo "matching_images=${IMAGES_JSON}" >> $GITHUB_OUTPUT
+            echo "steps=[]" >> $GITHUB_OUTPUT
+            echo "DEBUG: No matching steps found"
           fi
           
+          # Clean up temporary file
           echo "DEBUG: Final images JSON: ${IMAGES_JSON:-[]}"
+          rm "$temp_file"
+          
+          
 
       - name: Create PR Comment
         if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
