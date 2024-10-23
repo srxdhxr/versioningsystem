@@ -6,31 +6,24 @@ jobs:
   check-modified-folders:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write  # Required for commenting on PRs
+      pull-requests: write
     steps:
-      # Step 1: Check out the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Get the list of modified or new folders within 'flows/steps'
       - name: Find modified folders
         id: modified_folders
         run: |
-          # Handle the case where this is the first commit
           if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
             git fetch --prune --unshallow
           fi
-          # Check if there is a previous commit; if not, compare to an empty tree
           if git rev-parse HEAD^ >/dev/null 2>&1; then
             BASE=HEAD^
           else
             BASE=$(git hash-object -t tree /dev/null)
           fi
-          # Get the list of changed files in the 'flows/steps' folder and extract the subfolder names
           MODIFIED_FOLDERS=$(git diff --name-only $BASE HEAD flows/steps/ | cut -d'/' -f3 | sort | uniq)
-          # Print the folders for debug purposes
           echo "Modified step folders: $MODIFIED_FOLDERS"
-          # Format the folders list for the PR comment
           if [ -n "$MODIFIED_FOLDERS" ]; then
             COMMENT="### Modified Steps\n\nThe following steps were modified in this PR:\n"
             while IFS= read -r folder; do
@@ -41,22 +34,16 @@ jobs:
           else
             COMMENT="### Modified Steps\n\nNo steps were modified in this PR."
           fi
-          # Escape the comment text for GitHub Actions
           COMMENT="${COMMENT//'%'/'%25'}"
           COMMENT="${COMMENT//$'\n'/'%0A'}"
           COMMENT="${COMMENT//$'\r'/'%0D'}"
-          echo "::set-output name=comment::$COMMENT"
-          echo "::set-output name=folders::$MODIFIED_FOLDERS"
+          echo "comment=$COMMENT" >> $GITHUB_OUTPUT
+          echo "folders=$MODIFIED_FOLDERS" >> $GITHUB_OUTPUT
 
-      # Step 3: Add comment to PR
       - name: Comment on PR
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const comment = `${{ steps.modified_folders.outputs.comment }}`;
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.name,
-              issue_number: context.issue.number,
-              body: comment
-            });
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+          COMMENT="${{ steps.modified_folders.outputs.comment }}"
+          gh pr comment $PR_NUMBER --body "$COMMENT"
