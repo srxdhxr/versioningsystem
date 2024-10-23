@@ -1,14 +1,12 @@
 name: Detect Modified Steps
-
 on:
   pull_request:
     branches: [ main ]
-
-
 jobs:
   check-modified-folders:
     runs-on: ubuntu-latest
-
+    permissions:
+      pull-requests: write  # Required for commenting on PRs
     steps:
       # Step 1: Check out the repository
       - name: Checkout repository
@@ -22,24 +20,43 @@ jobs:
           if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
             git fetch --prune --unshallow
           fi
-
           # Check if there is a previous commit; if not, compare to an empty tree
           if git rev-parse HEAD^ >/dev/null 2>&1; then
             BASE=HEAD^
           else
             BASE=$(git hash-object -t tree /dev/null)
           fi
-
-          # Get the list of changed files in the 'flows/steps' folder and extract the subfolder names (e.g., step1, step2)
+          # Get the list of changed files in the 'flows/steps' folder and extract the subfolder names
           MODIFIED_FOLDERS=$(git diff --name-only $BASE HEAD flows/steps/ | cut -d'/' -f3 | sort | uniq)
-
           # Print the folders for debug purposes
           echo "Modified step folders: $MODIFIED_FOLDERS"
-
-          # Save the modified folders as output for use in other steps
+          # Format the folders list for the PR comment
+          if [ -n "$MODIFIED_FOLDERS" ]; then
+            COMMENT="### Modified Steps\n\nThe following steps were modified in this PR:\n"
+            while IFS= read -r folder; do
+              if [ -n "$folder" ]; then
+                COMMENT="${COMMENT}\n- ${folder}"
+              fi
+            done <<< "$MODIFIED_FOLDERS"
+          else
+            COMMENT="### Modified Steps\n\nNo steps were modified in this PR."
+          fi
+          # Escape the comment text for GitHub Actions
+          COMMENT="${COMMENT//'%'/'%25'}"
+          COMMENT="${COMMENT//$'\n'/'%0A'}"
+          COMMENT="${COMMENT//$'\r'/'%0D'}"
+          echo "::set-output name=comment::$COMMENT"
           echo "::set-output name=folders::$MODIFIED_FOLDERS"
 
-      # Step 3: Use the modified folders (optional step for future tasks)
-      - name: List modified folders
-        run: |
-          echo "Modified step folders: ${{ steps.modified_folders.outputs.folders }}"
+      # Step 3: Add comment to PR
+      - name: Comment on PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const comment = `${{ steps.modified_folders.outputs.comment }}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              issue_number: context.issue.number,
+              body: comment
+            });
