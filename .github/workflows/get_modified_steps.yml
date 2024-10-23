@@ -1,0 +1,33 @@
+name: Detect Modified Steps
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-modified-folders:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Get the list of modified or new folders within 'flows/steps'
+      - name: Find modified folders
+        id: modified_folders
+        run: |
+          # Get the list of changed files in the 'flows/steps' folder
+          MODIFIED_FOLDERS=$(git diff --name-only HEAD^ HEAD flows/steps/*/ | cut -d'/' -f3 | sort | uniq)
+          
+          # Print the folders for debug purposes
+          echo "Modified folders: $MODIFIED_FOLDERS"
+
+          # Save the modified folders as output for use in other steps
+          echo "::set-output name=folders::$MODIFIED_FOLDERS"
+
+      # Step 3: Use the modified folders (optional step for future tasks)
+      - name: List modified folders
+        run: |
+          echo "Modified folders: ${{ steps.modified_folders.outputs.folders }}"
