@@ -62,7 +62,7 @@ jobs:
             # Skip empty folder names
             [ -z "$folder" ] && continue
             
-            IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/$folder"
+            IMAGE_NAME="${{ secrets.DOCKER_USER }}/$folder"
             echo "Checking image: $IMAGE_NAME"
             
             # Use Docker Hub API to find latest tag with error handling
