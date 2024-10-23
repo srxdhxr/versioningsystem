@@ -93,16 +93,22 @@ jobs:
               }
               
               // Add tags section
-              comment += '\n### Steps and Tags:\n';
+              comment += '\n### Image Version Bump Info:\n';
+              comment += '\n#### Edit this comment to update the new version for each image within the [ ]:\n';
               if (tags && tags.length > 0) {
-                tags.forEach(([step, tag]) => {
-                  comment += `- \`${step}\`: \`${tag}\`\n`;
+                tags.forEach(([step, currentTag]) => {
+                  // Calculate the next patch version
+                  const [major, minor, patch] = currentTag.split('.').map(Number);
+                  const nextPatchVersion = `${major}.${minor}.${patch + 1}`;
+                  
+                  // Format the output
+                  comment += `- \`${step}\` | [${currentTag}] -> [${nextPatchVersion}]\n`;
                 });
               } else {
                 comment += '_No matching tags found_\n';
               }
               
-              comment += '\n⚠️ Please review these changes carefully before merging.';
+              comment += '\n⚠️ Please review these changes carefully before merging. ';
               
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
