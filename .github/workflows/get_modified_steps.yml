@@ -1,10 +1,10 @@
-name: Detect-modified-steps
+name: detect-modified-steps
+
 on:
   pull_request:
     branches: [ main ]
     paths:
-      - 'flows/steps/**'  
-
+      - 'flows/steps/**'
 
 jobs:
   check-modified-folders:
@@ -17,9 +17,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
+          fetch-depth: 0
 
-      - name: Find modified or newly added steps
-        id: modified-steps
+      - name: Find modified folders
+        id: modified-folders
         run: |
           MODIFIED_FOLDERS=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} flows/steps/ | cut -d'/' -f3 | sort | uniq | grep -v '^$' || true)
           
@@ -52,7 +53,7 @@ jobs:
           # Run Python script and capture output
           TAGS_OUTPUT=$(python .github/scripts/docker_tags.py \
             '${{ steps.modified-folders.outputs.folders }}' \
-            '${{ secrets.DOCKER_USERNAME }}' \
+            '${{ secrets.DOCKER_USER }}' \
             '${{ secrets.DOCKER_PWD }}')
           
           # Save output to GITHUB_OUTPUT
@@ -66,7 +67,6 @@ jobs:
           script: |
             try {
               const folders = ${{ steps.modified-folders.outputs.folders }};
-
               const tags = ${{ steps.docker-tags.outputs.tags || '[]' }};
               
               let comment = '## Modified Steps Check\n\n';
@@ -81,7 +81,6 @@ jobs:
                 comment += '_No modified folders found_\n';
               }
               
-
               // Add tags section
               comment += '\n### Steps and Tags:\n';
               if (tags && tags.length > 0) {
