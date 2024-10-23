@@ -1,4 +1,4 @@
-name: detect-modified-steps
+name: Detect-modified-steps
 on:
   pull_request:
     branches: [ main ]
