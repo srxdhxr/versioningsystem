@@ -1,0 +1,61 @@
+name: Get Affected Docker Images
+
+on:
+  workflow_run:
+    workflows: ["Detect Modified Steps"] # This assumes the folder detection action is named Detect Modified Folders
+    types:
+      - completed
+
+jobs:
+  docker-image-retrieval:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository (not needed if the workflow_run already provides context)
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Log in to DockerHub
+      - name: Log in to DockerHub
+        run: |
+          echo "${{ secrets.DOCKER_PWD }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+
+      # Step 3: Retrieve the modified folders from the previous step
+      - name: Get modified folders
+        id: get_folders
+        run: |
+          MODIFIED_FOLDERS="${{ github.event.workflow_run.outputs.folders }}"
+          echo "Modified folders: $MODIFIED_FOLDERS"
+      
+      # Step 4: Retrieve all DockerHub images and filter by the modified folders
+      - name: Get matching Docker images
+        id: find_images
+        run: |
+          MODIFIED_FOLDERS="${{ github.event.workflow_run.outputs.folders }}"
+          MATCHING_IMAGES=""
+          echo "Fetching all Docker images..."
+
+          # Loop over each modified folder and check if there's a corresponding Docker image
+          for folder in $MODIFIED_FOLDERS; do
+            IMAGE_NAME="your-dockerhub-username/$folder"
+            echo "Checking for image: $IMAGE_NAME"
+
+            # Use DockerHub API to find if the image exists and its latest tag
+            IMAGE_TAGS=$(curl -s https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USERNAME }}/$folder/tags | jq -r '.results[].name' | sort -V | tail -1)
+
+            if [ -n "$IMAGE_TAGS" ]; then
+              echo "Found image for $folder with latest tag: $IMAGE_TAGS"
+              MATCHING_IMAGES="$MATCHING_IMAGES $IMAGE_NAME:$IMAGE_TAGS"
+            else
+              echo "No image found for $folder"
+            fi
+          done
+
+          # Save the matching images
+          echo "Matching Docker images: $MATCHING_IMAGES"
+          echo "::set-output name=matching_images::$MATCHING_IMAGES"
+
+      # Step 5: Print the images with their latest tags
+      - name: List matching images
+        run: |
+          echo "Matching images with latest tags: ${{ steps.find_images.outputs.matching_images }}"
