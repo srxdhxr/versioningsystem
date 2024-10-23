@@ -53,11 +53,11 @@ jobs:
           while IFS= read -r folder; do
             [ -z "$folder" ] && continue
             
-            IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/$folder"
+            IMAGE_NAME="${{ secrets.DOCKER_USER }}/$folder"
             echo "Checking image: $IMAGE_NAME"
             
             LATEST_TAG=$(curl -s -H "Authorization: Bearer ${{ secrets.DOCKER_PWD }}" \
-              "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USERNAME }}/$folder/tags?page_size=1&ordering=last_updated" \
+              "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USER }}/$folder/tags?page_size=1&ordering=last_updated" \
               | jq -r '.results[0].name // empty' 2>/dev/null || echo '')
             
             if [ -n "$LATEST_TAG" ]; then
