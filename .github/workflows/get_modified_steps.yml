@@ -24,21 +24,24 @@ jobs:
         run: |
           # Fetch the modified folders between the base and head commits
           MODIFIED_FOLDERS=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} flows/steps/ | cut -d'/' -f3 | sort | uniq | grep -v '^$' || true)
+
           echo "DEBUG: Raw MODIFIED_FOLDERS content:"
           echo "$MODIFIED_FOLDERS"
+
           # If no modified folders are found, set an empty list and exit
           if [ -z "$MODIFIED_FOLDERS" ]; then
             echo "folders=[]" >> $GITHUB_OUTPUT
             echo "No modified folders found"
             exit 0
           fi
-          
-          # Ensure each folder name is trimmed and formatted correctly
-          FOLDERS_JSON=$(echo "$MODIFIED_FOLDERS" | sed 's/^ *//;s/ *$//' | jq -R . | jq -s .)
+
+          # Convert the list of folders (with newlines) into a JSON array
+          FOLDERS_JSON=$(echo "$MODIFIED_FOLDERS" | jq -R . | jq -s .)
 
           # Output the folders as JSON to GitHub Actions output
           echo "folders=${FOLDERS_JSON}" >> $GITHUB_OUTPUT
           echo "DEBUG: Modified folders: ${FOLDERS_JSON}"
+
 
 
 
