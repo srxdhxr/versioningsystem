@@ -24,7 +24,8 @@ jobs:
         run: |
           # Fetch the modified folders between the base and head commits
           MODIFIED_FOLDERS=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} flows/steps/ | cut -d'/' -f3 | sort | uniq | grep -v '^$' || true)
-
+          MODIFIED_FOLDERS=$(echo "$MODIFIED_FOLDERS" | tr '\n' ' ')
+          
           echo "DEBUG: Raw MODIFIED_FOLDERS content:"
           echo "$MODIFIED_FOLDERS"
 
