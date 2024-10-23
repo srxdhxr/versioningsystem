@@ -67,7 +67,7 @@ jobs:
             
             # Use Docker Hub API to find latest tag with error handling
             LATEST_TAG=$(curl -s -f -H "Authorization: Bearer ${{ secrets.DOCKER_PWD }}" \
-              "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USERNAME }}/$folder/tags?page_size=1&ordering=last_updated" \
+              "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USER }}/$folder/tags?page_size=1&ordering=last_updated" \
               | jq -r '.results[0].name // empty' 2>/dev/null || echo '')
             
             if [ -n "$LATEST_TAG" ]; then
