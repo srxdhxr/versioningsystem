@@ -72,50 +72,50 @@ jobs:
           echo "DEBUG: Tags output: $TAGS_OUTPUT"
 
       - name: Create PR Comment
-  if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
-  uses: actions/github-script@v6
-  with:
-    script: |
-      try {
-        const folders = ${{ steps.modified-folders.outputs.folders }};
-        const tags = ${{ steps.docker-tags.outputs.tags || '[]' }};
-        
-        let comment = '## Modified Steps Check\n\n';
-        
-        // Add folders section
-        comment += '### Modified Folders:\n';
-        if (folders && folders.length > 0) {
-          folders.forEach(folder => {
-            comment += `- \`${folder}\`\n`;
-          });
-        } else {
-          comment += '_No modified folders found_\n';
-        }
-        
-        // Add tags section
-        comment += '\n### Steps and Tags with Version Bump Options:\n';
-        if (tags && tags.length > 0) {
-          tags.forEach(([step, tag]) => {
-            // Simulate a dropdown with checkboxes for version bumps
-            comment += `- \`${step}\`: \`${tag}\`\n`;
-            comment += '  Select version bump type:\n';
-            comment += '    - [ ] PATCH (default)\n';
-            comment += '    - [ ] MINOR\n';
-            comment += '    - [ ] MAJOR\n';
-          });
-        } else {
-          comment += '_No matching tags found_\n';
-        }
-        
-        comment += '\n⚠️ Please select the version bump type and review these changes carefully before merging.';
-        
-        await github.rest.issues.createComment({
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          issue_number: context.issue.number,
-          body: comment
-        });
-      } catch (error) {
-        core.setFailed(`Action failed with error: ${error}`);
-        console.log('Error details:', error);
-      }
+        if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            try {
+              const folders = ${{ steps.modified-folders.outputs.folders }};
+              const tags = ${{ steps.docker-tags.outputs.tags || '[]' }};
+              
+              let comment = '## Modified Steps Check\n\n';
+              
+              // Add folders section
+              comment += '### Modified Folders:\n';
+              if (folders && folders.length > 0) {
+                folders.forEach(folder => {
+                  comment += `- \`${folder}\`\n`;
+                });
+              } else {
+                comment += '_No modified folders found_\n';
+              }
+              
+              // Add tags section
+              comment += '\n### Steps and Tags with Version Bump Options:\n';
+              if (tags && tags.length > 0) {
+                tags.forEach(([step, tag]) => {
+                  // Simulate a dropdown with checkboxes for version bumps
+                  comment += `- \`${step}\`: \`${tag}\`\n`;
+                  comment += '  Select version bump type:\n';
+                  comment += '    - [ ] PATCH (default)\n';
+                  comment += '    - [ ] MINOR\n';
+                  comment += '    - [ ] MAJOR\n';
+                });
+              } else {
+                comment += '_No matching tags found_\n';
+              }
+              
+              comment += '\n⚠️ Please select the version bump type and review these changes carefully before merging.';
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            } catch (error) {
+              core.setFailed(`Action failed with error: ${error}`);
+              console.log('Error details:', error);
+            }
