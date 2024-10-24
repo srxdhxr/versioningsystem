@@ -67,7 +67,7 @@ def main():
     repository = os.environ.get('GITHUB_REPOSITORY')
     modified_folders = os.environ.get('MODIFIED_FOLDERS')
     
-    if not all([github_token, repository, steps_versions]):
+    if not all([github_token, repository, modified_folders]):
         print("Missing required environment variables")
         sys.exit(1)
     
