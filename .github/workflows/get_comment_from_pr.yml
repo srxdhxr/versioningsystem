@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write    # This is required for pushing tags
+  pull-requests: read  # If you need to read PR information
+  
 jobs:
   get-pr-comment:
     runs-on: ubuntu-latest
@@ -78,10 +82,15 @@ jobs:
           LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
       
       - name: Tag steps with new versions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # or use ${{ secrets.YOUR_PAT_SECRET }}
         run: |
-          # Set git configurations if needed
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          # Update the remote URL to include authentication
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          
+          # Set git configurations
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           
           # Get versions from previous step
           versions='${{ steps.extract-versions.outputs.steps_versions }}'
@@ -92,7 +101,6 @@ jobs:
           
           # Process each version
           echo "$versions" | jq -c '.[]' | while IFS= read -r version_pair; do
-            # Extract step and version using jq
             step=$(echo "$version_pair" | jq -r '.[0]')
             new_version=$(echo "$version_pair" | jq -r '.[1]')
             
