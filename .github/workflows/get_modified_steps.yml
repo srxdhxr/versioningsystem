@@ -93,8 +93,7 @@ jobs:
               }
               
               // Add tags section
-              comment += '\n### Steps and Tags with Version Bump Options:\n';
-              comment += '$$\n'
+              comment += '\n### Steps and Tags with Version Bump Options:\n\$$$';
               if (tags && tags.length > 0) {
                 tags.forEach(([step, currentTag]) => {
                   // Calculate the next patch version
@@ -104,12 +103,8 @@ jobs:
                   // Format the output
                   
                   comment += `- \`${step}\` [${currentTag}] -> [${nextPatchVersion}]\n`;
-                  
                 });
-              
-              }
-              comment += '$$\n'
-              else {
+              } else {
                 comment += '_No matching tags found_\n';
               }
               
