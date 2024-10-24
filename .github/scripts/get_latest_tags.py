@@ -79,11 +79,17 @@ def main():
         print(f"Failed to parse STEPS_VERSIONS JSON: {e}")
         print(f"Received content: {steps_versions}")
         sys.exit(1)
-    
+    tag_map = []
     for folder in folders:
         print(f"Getting latest git tag for the folder: {folder}\n")
         latest_tag = get_current_version(folder)
-        print(f"The latest tag is {latest_tag} for {folder}\n")
+        print(f"The latest tag is {latest_tag} for {folder}\n\n")
+        tag_map.append([folder,latest_tag])
+
+    tag_json = json.dumps(tag_map)
+    print(f"INFO: tag_map = \n{tag_json}")
+    print(f"::set-output name=step_tag_map::{tag_json}")
+
 
 
 if __name__ == "__main__":
