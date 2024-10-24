@@ -30,14 +30,18 @@ jobs:
 
             // Take the first PR in case there are multiple
             const prNumber = pullRequests[0].number;
-            core.setOutput('pr-number', prNumber);
+            console.log(`Found PR number: ${prNumber}`);
+            // Set the PR number as an environment variable
+            console.log(`PR_NUMBER=${prNumber}`); // Debug log
+            core.exportVariable('PR_NUMBER', prNumber);
 
       - name: Get latest comment from GitHub Actions bot
-        id: get-comment
         uses: actions/github-script@v6
+        env:
+          PR_NUMBER: ${{ env.PR_NUMBER }}  # Passing the PR number as env variable
         with:
           script: |
-            const prNumber = core.getInput('pr-number');
+            const prNumber = process.env.PR_NUMBER; // Get the PR number from the environment variable
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -53,14 +57,14 @@ jobs:
 
             // Get the most recent comment
             const latestComment = botComments[botComments.length - 1].body;
-            core.setOutput('latest-comment', latestComment);
+            console.log(`Latest comment: ${latestComment}`);
+            core.exportVariable('LATEST_COMMENT', latestComment);
 
       - name: Run Python script with the comment
         run: |
-          echo "LATEST_COMMENT=${{ steps.get-comment.outputs['latest-comment'] }}" >> $GITHUB_ENV
           python3 print_comment.py
         env:
-          LATEST_COMMENT: ${{ steps.get-comment.outputs['latest-comment'] }}
+          LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
 
       - name: Print comment from Python script
         run: |
