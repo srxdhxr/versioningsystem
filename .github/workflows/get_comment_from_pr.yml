@@ -77,6 +77,22 @@ jobs:
         env:
           LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
       
-      - name: Print extracted versions (JSON output)
+      - name: Tag steps with new versions
         run: |
-          echo "Extracted Steps and Versions: ${{ steps.extract-versions.outputs.steps_versions }}"
+          versions=${{ steps.extract-versions.outputs.steps_versions }}
+          
+          # Loop through the JSON array and tag each step
+          echo "$versions" | jq -c '.[]' | while read -r version; do
+            step=$(echo "$version" | jq -r '.[0]')
+            new_version=$(echo "$version" | jq -r '.[1]')
+            
+            git tag "${step}-v${new_version}"
+            
+            git push origin "${step}-v${new_version}"
+            
+            echo "Tagged $step with version $new_version"
+          done
+
+      - name: List created tags
+        run: |
+          git tag -l
