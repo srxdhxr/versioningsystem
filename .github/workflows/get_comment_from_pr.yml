@@ -25,14 +25,14 @@ jobs:
             });
 
             if (pullRequests.length === 0) {
-              throw new Error(No pull requests associated with commit SHA ${sha});
+              throw new Error(`No pull requests associated with commit SHA ${sha}`);
             }
 
             // Take the first PR in case there are multiple
             const prNumber = pullRequests[0].number;
-            console.log(Found PR number: ${prNumber});
+            console.log(`Found PR number: ${prNumber}`);
             // Set the PR number as an environment variable
-            console.log(PR_NUMBER=${prNumber}); // Debug log
+            console.log(`PR_NUMBER=${prNumber}`); // Debug log
             core.exportVariable('PR_NUMBER', prNumber);
 
       - name: Get latest comment from GitHub Actions bot
@@ -57,12 +57,12 @@ jobs:
 
             // Get the most recent comment
             const latestComment = botComments[botComments.length - 1].body;
-            console.log(Latest comment: ${latestComment});
+            console.log(`Latest comment: ${latestComment}`);
             core.exportVariable('LATEST_COMMENT', latestComment);
 
       - name: Run Python script with the comment
         run: |
-          python .github/scripts/parse_new_versions.py
+          python3 print_comment.py
         env:
           LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
 
