@@ -89,7 +89,7 @@ def main():
     tag_json = json.dumps(tag_map)
     print(f"INFO: tag_map = \n{tag_json}")
     with open(os.environ['GITHUB_ENV'], 'a') as env_file:
-        env_file.write(f"TAG_MAP={result_json}\n")
+        env_file.write(f"TAG_MAP={tag_json}\n")
 
 
 
