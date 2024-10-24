@@ -4,46 +4,47 @@ import json
 import requests
 from typing import List, Tuple
 
-def get_docker_tags(username: str, folders: List[str], token: str) -> List[Tuple[str, str]]:
-    """
-    Get latest tags for given folders from Docker Hub
-    
-    Args:
-        username: Docker Hub username
-        folders: List of folder/image names to check
-        token: Docker Hub token
-    
-    Returns:
-        List of tuples containing (image_name, latest_tag)
-    """
-    results = []
-    headers = {'Authorization': f'Bearer {token}'}
-    
-    for folder in folders:
-        if not folder:  # Skip empty folder names
-            continue
-            
-        # Construct API URL for tags
-        url = f'https://hub.docker.com/v2/repositories/{username}/{folder}/tags'
-        params = {'page_size': 1, 'ordering': 'last_updated'}
+    def get_docker_tags(username: str, folders: List[str], token: str) -> List[Tuple[str, str]]:
+        """
+        Get latest tags for given folders from Docker Hub
         
-        try:
-            response = requests.get(url, headers=headers, params=params)
-            response.raise_for_status()
-            data = response.json()
-            
-            if data.get('results'):
-                latest_tag = data['results'][0]['name']
-                results.append([folder, latest_tag])
-                print(f"Found tag for {folder}: {latest_tag}", file=sys.stderr)
-            else:
-                print(f"No tags found for {folder}", file=sys.stderr)
+        Args:
+            username: Docker Hub username
+            folders: List of folder/image names to check
+            token: Docker Hub token
+        
+        Returns:
+            List of tuples containing (image_name, latest_tag)
+        """
+        results = []
+        headers = {'Authorization': f'Bearer {token}'}
+        
+        for folder in folders:
+            if not folder:  # Skip empty folder names
+                continue
                 
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching tags for {folder}: {str(e)}", file=sys.stderr)
-            continue
-    
-    return results
+            # Construct API URL for tags
+            url = f'https://hub.docker.com/v2/repositories/{username}/{folder}/tags'
+            params = {'page_size': 1, 'ordering': 'last_updated'}
+            
+            try:
+                response = requests.get(url, headers=headers, params=params)
+                response.raise_for_status()
+                data = response.json()
+                
+                if data.get('results'):
+                    print(data['results'])
+                    latest_tag = data['results'][0]['name']
+                    results.append([folder, latest_tag])
+                    print(f"Found tag for {folder}: {latest_tag}", file=sys.stderr)
+                else:
+                    print(f"No tags found for {folder}", file=sys.stderr)
+                    
+            except requests.exceptions.RequestException as e:
+                print(f"Error fetching tags for {folder}: {str(e)}", file=sys.stderr)
+                continue
+        
+        return results
 
 def main():
     """
