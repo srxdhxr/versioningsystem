@@ -3,7 +3,7 @@ import re
 import os
 def extract_versions(comment):
     # Regex to match the format: step1 | [1.0.0] -> [1.0.1]
-    pattern = r'`(.+?)` \| \[(.+?)\] -> \[(.+?)\]'
+    pattern = r'\$\$\$\s*- `(.+?)` \[(.+?)\] -> \[(.+?)\]'
     matches = re.findall(pattern, comment)
     return matches
 
