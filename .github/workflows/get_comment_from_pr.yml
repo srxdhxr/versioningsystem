@@ -1,4 +1,4 @@
-name: Fetch PR Comments on Merge
+name: Get PR from Commit SHA
 
 on:
   push:
@@ -6,37 +6,32 @@ on:
       - main
 
 jobs:
-  fetch-comments:
+  get-pr-from-sha:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Get the merged pull request number
-        id: get_pr
-        run: |
-          # Fetch the commit SHA that triggered the action
-          COMMIT_SHA=$(echo "${GITHUB_SHA}")
-          
-          # Get the PR number associated with this commit
-          PR_NUMBER=$(gh pr list --state merged --json number,headRefName,baseRefName --jq ".[] | select(.headRefName==\"$GITHUB_REF\") | .number")
-          
-          # Check if we found a PR number
-          if [ -z "$PR_NUMBER" ]; then
-            echo "No PR associated with this commit."
-            exit 1
-          fi
-          echo "PR_NUMBER=${PR_NUMBER}" >> $GITHUB_ENV
+      - name: Get PR number from commit SHA
+        id: get-pr
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const sha = process.env.GITHUB_SHA; // Get the current commit SHA
+            const { data: pullRequests } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: sha,
+            });
 
-      - name: Fetch PR Comments
-        id: fetch_comments
-        run: |
-          # Fetch the comments from the PR
-          COMMENTS=$(gh pr view ${{ env.PR_NUMBER }} --json comments --jq '.comments[].body' | tr '\n' ';')
-          echo "COMMENTS=${COMMENTS}" >> $GITHUB_ENV
+            if (pullRequests.length === 0) {
+              throw new Error(`No pull requests associated with commit SHA ${sha}`);
+            }
 
-      - name: Run Python Script
-        run: |
-          echo "${{ env.COMMENTS }}" > comments.txt
-          python3 your_script.py comments.txt
+            // Take the first PR in case there are multiple
+            const prNumber = pullRequests[0].number;
+            console.log(`PR number: ${prNumber}`);
+            return { prNumber };
+
+      - name: Print PR number
+        run: echo "PR number is ${{ steps.get-pr.outputs.prNumber }}"

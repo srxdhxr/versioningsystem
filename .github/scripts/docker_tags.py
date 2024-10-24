@@ -41,6 +41,7 @@ def get_docker_tags(username: str, folders: List[str], token: str) -> List[Tuple
                 
         except requests.exceptions.RequestException as e:
             print(f"Error fetching tags for {folder}: {str(e)}", file=sys.stderr)
+            results.append((folder, "0.0.0")) 
             continue
     
     return results

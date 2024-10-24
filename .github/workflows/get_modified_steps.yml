@@ -93,8 +93,7 @@ jobs:
               }
               
               // Add tags section
-              comment += '\n### Image Version Bump Info:\n';
-              comment += '\n#### Edit this comment to update the new version for each image within the [ ]:\n';
+              comment += '\n### Steps and Tags with Version Bump Options:\n\$$$\n';
               if (tags && tags.length > 0) {
                 tags.forEach(([step, currentTag]) => {
                   // Calculate the next patch version
@@ -102,7 +101,8 @@ jobs:
                   const nextPatchVersion = `${major}.${minor}.${patch + 1}`;
                   
                   // Format the output
-                  comment += `- \`${step}\` | [${currentTag}] -> [${nextPatchVersion}]\n`;
+                  
+                  comment += `- \`${step}\` [${currentTag}] -> [${nextPatchVersion}]\n`;
                 });
               } else {
                 comment += '_No matching tags found_\n';
