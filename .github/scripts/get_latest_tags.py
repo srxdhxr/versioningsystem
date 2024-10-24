@@ -81,7 +81,7 @@ def main():
         print(f"Received content: {steps_versions}")
         sys.exit(1)
     
-    print("HERE IS FOLDER:", folder)
+    print("HERE IS FOLDER:", folders)
 
 if __name__ == "__main__":
     main()
