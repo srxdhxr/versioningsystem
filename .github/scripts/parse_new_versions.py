@@ -11,5 +11,13 @@ if __name__ == "__main__":
     comments = os.getenv('LATEST_COMMENT')
 
     versions = extract_versions(comments)
+    tag_map = []
+
     for step, current_version, new_version in versions:
         print(f"{step} current version: {current_version} -> new version: {new_version}")
+        tag_map.append(f"{step}:{new_version}")
+    
+    steps_and_versions_str = ",".join(steps_and_versions)
+    
+    # GitHub Actions requires to output the value in a special format
+    print(f"::set-output name=steps_versions::{steps_and_versions_str}")
