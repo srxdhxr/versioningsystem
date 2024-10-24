@@ -70,6 +70,10 @@ jobs:
           MODIFIED_FOLDERS: ${{ steps.modified-folders.outputs.folders }}
           
 
+      - name: Print the TAG MAP
+        run: |
+          echo "Printing the TAG MAP which is output of last step"
+          echo "Latest tags: ${{ env.TAG_MAP }}"
       # - name: Create PR Comment
       #   if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
       #   uses: actions/github-script@v6
