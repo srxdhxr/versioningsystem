@@ -60,16 +60,18 @@ jobs:
             console.log(`Latest comment: ${latestComment}`);
             core.exportVariable('LATEST_COMMENT', latestComment);
 
-      - name: Run Python script with the comment
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'  
+
+      - name: Install Python dependencies
         run: |
-          python3 .github/scripts/parse_new_version.py
+          python -m pip install --upgrade pip
+
+      - name: Run Python script
+        run: |
+          python .github/scripts/parse_new_versions.py 
         env:
           LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
-
-      - name: Print comment from Python script
-        run: |
-          python3 -c "
-          import os
-          comment = os.getenv('LATEST_COMMENT')
-          print(f'The latest comment by github-actions bot: {comment}')
-          "
