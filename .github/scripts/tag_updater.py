@@ -24,7 +24,7 @@ def get_current_version(step: str) -> str:
     Returns '1.0.0' if no tags exist.
     """
     stdout, _, _ = run_command(['git', 'tag', '-l', f'{step}-v*'])
-    
+    print(tag)
     if not stdout:
         return '1.0.0'
     
@@ -32,6 +32,7 @@ def get_current_version(step: str) -> str:
     for tag in stdout.split('\n'):
         try:
             version = tag.replace(f'{step}-v', '')
+            print(f"version for {tag} : {version}")
             semver.VersionInfo.parse(version)
             versions.append(version)
         except ValueError:
