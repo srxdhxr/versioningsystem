@@ -81,5 +81,7 @@ def main():
         print(f"Received content: {steps_versions}")
         sys.exit(1)
     
-    for folder in folders:
-        print(folder)
+    print("HERE IS FOLDER:", folder)
+
+if __name__ == "__main__":
+    main()
