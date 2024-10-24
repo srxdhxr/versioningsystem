@@ -62,7 +62,7 @@ jobs:
 
       - name: Run Python script with the comment
         run: |
-          python3 print_comment.py
+          python3 .github/scripts/get_comment_from_pr.py
         env:
           LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
 
