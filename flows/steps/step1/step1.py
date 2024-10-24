@@ -1,1 +1,1 @@
-print("tea")
+print("teas")
