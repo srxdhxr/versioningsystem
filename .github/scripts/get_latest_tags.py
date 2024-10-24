@@ -25,7 +25,6 @@ def get_current_version(step: str) -> str:
     Returns '1.0.0' if no tags exist.
     """
     stdout, _, _ = run_command(['git', 'tag', '-l', f'{step}-v*'])
-    print(tag)
     if not stdout:
         return '1.0.0'
     
