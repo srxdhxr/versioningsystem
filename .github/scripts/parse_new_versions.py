@@ -8,8 +8,7 @@ def extract_versions(comment):
     return matches
 
 if __name__ == "__main__":
-    with open(os.getenv('LATEST_COMMENT'), 'r') as file:
-        comments = file.read()
+    comments = os.getenv('LATEST_COMMENT')
 
     versions = extract_versions(comments)
     for step, current_version, new_version in versions:
