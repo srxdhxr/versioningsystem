@@ -93,18 +93,21 @@ jobs:
               }
               
               // Add tags section
-              comment += '\n### Steps and Tags:\n';
+              comment += '\n### Steps and Tags with Version Bump Options:\n';
               if (tags && tags.length > 0) {
-                tags.forEach(([step, tag]) => {
-                  comment += `- \`${step}\`: \`${tag}\`\n`;
+                tags.forEach(([step, currentTag]) => {
+                  // Calculate the next patch version
+                  const [major, minor, patch] = currentTag.split('.').map(Number);
+                  const nextPatchVersion = `${major}.${minor}.${patch + 1}`;
+                  
+                  // Format the output
+                  comment += `- \`${step}\` [${currentTag}] -> [${nextPatchVersion}]\n`;
                 });
               } else {
-                folders.forEach(folder => {
-                  comment += `- \`${folder}\`\n`;
-                });
+                comment += '_No matching tags found_\n';
               }
               
-              comment += '\n⚠️ Please review these changes carefully before merging.';
+              comment += '\n⚠️ Please review these changes carefully before merging. ';
               
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
