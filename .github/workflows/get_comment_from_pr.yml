@@ -75,15 +75,3 @@ jobs:
           python .github/scripts/parse_new_versions.py 
         env:
           LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
-      
-      - name: Tag steps with new versions
-        run: |
-          steps_versions="${{ steps.extract-versions.outputs.steps_versions }}"
-          IFS=',' read -ra steps_array <<< "$steps_versions"
-          for step_version in "${steps_array[@]}"; do
-            step=$(echo "$step_version" | cut -d':' -f1)
-            new_version=$(echo "$step_version" | cut -d':' -f2)
-            echo "Tagging $step with version $new_version"
-            git tag "${step}-v${new_version}"
-            git push origin "${step}-v${new_version}"
-          done
