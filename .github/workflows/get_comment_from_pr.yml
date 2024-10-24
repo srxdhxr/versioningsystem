@@ -25,19 +25,20 @@ jobs:
             });
 
             if (pullRequests.length === 0) {
-              throw new Error(`No pull requests associated with commit SHA ${sha}`);
+              throw new Error(No pull requests associated with commit SHA ${sha});
             }
 
             // Take the first PR in case there are multiple
             const prNumber = pullRequests[0].number;
-            console.log(`Found PR number: ${prNumber}`);
-            return { prNumber };
-
-      - name: Set PR number as output
-        run: echo "PR_NUMBER=${{ steps.get-pr.outputs.prNumber }}" >> $GITHUB_ENV
+            console.log(Found PR number: ${prNumber});
+            // Set the PR number as an environment variable
+            console.log(PR_NUMBER=${prNumber}); // Debug log
+            core.exportVariable('PR_NUMBER', prNumber);
 
       - name: Get latest comment from GitHub Actions bot
         uses: actions/github-script@v6
+        env:
+          PR_NUMBER: ${{ env.PR_NUMBER }}  # Passing the PR number as env variable
         with:
           script: |
             const prNumber = process.env.PR_NUMBER; // Get the PR number from the environment variable
@@ -56,14 +57,12 @@ jobs:
 
             // Get the most recent comment
             const latestComment = botComments[botComments.length - 1].body;
-            console.log(`Latest comment: ${latestComment}`);
-            return { latestComment };
-
-      - name: Set latest comment as output
-        run: echo "LATEST_COMMENT=${{ steps.get-latest-comment.outputs.latestComment }}" >> $GITHUB_ENV
+            console.log(Latest comment: ${latestComment});
+            core.exportVariable('LATEST_COMMENT', latestComment);
 
       - name: Run Python script with the comment
-        run: python3 .github/scripts/parse_new_versions.py
+        run: |
+          python .github/scripts/parse_new_versions.py
         env:
           LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
 
