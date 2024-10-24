@@ -106,8 +106,10 @@ jobs:
                   comment += `- \`${step}\` [${currentTag}] -> [${nextPatchVersion}]\n`;
                   
                 });
+              
+              }
               comment += '$$\n'
-              } else {
+              else {
                 comment += '_No matching tags found_\n';
               }
               
