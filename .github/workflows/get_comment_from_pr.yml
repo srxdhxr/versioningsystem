@@ -130,9 +130,3 @@ jobs:
           # Verify final tags
           echo "Final list of tags:"
           git tag -l
-
-  shell: bash
-
-      - name: List created tags
-        run: |
-          git tag -l
