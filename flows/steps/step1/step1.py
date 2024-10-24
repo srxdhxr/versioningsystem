@@ -1,1 +1,1 @@
-print("teas")
+print("qt")
