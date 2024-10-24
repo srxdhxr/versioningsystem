@@ -71,7 +71,12 @@ jobs:
           python -m pip install --upgrade pip
 
       - name: Run Python script
+        id: extract-versions
         run: |
           python .github/scripts/parse_new_versions.py 
         env:
           LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
+      
+      - name: Print extracted versions (JSON output)
+        run: |
+          echo "Extracted Steps and Versions: ${{ steps.extract-versions.outputs.steps_versions }}"
