@@ -81,7 +81,11 @@ def main():
         print(f"Received content: {steps_versions}")
         sys.exit(1)
     
-    print("HERE IS FOLDER:", folders)
+    for folder in folders:
+        print(f"Getting latest git tag for the folder: {folder}\n")
+        latest_tag = get_current_version(folder)
+        print(f"The latest tag is {latest_tag} for {folder}\n")
+
 
 if __name__ == "__main__":
     main()
