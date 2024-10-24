@@ -1,4 +1,4 @@
-name: Get PR Comment and Run Python Script
+name: Get PR from Commit SHA
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  get-pr-comment:
+  get-pr-from-sha:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -30,42 +30,8 @@ jobs:
 
             // Take the first PR in case there are multiple
             const prNumber = pullRequests[0].number;
-            core.setOutput('pr-number', prNumber);
+            console.log(`PR number: ${prNumber}`);
+            return { prNumber };
 
-      - name: Get latest comment from GitHub Actions bot
-        id: get-comment
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const prNumber = core.getInput('pr-number');
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-            });
-
-            // Filter comments by github-actions bot
-            const botComments = comments.filter(comment => comment.user.login === 'github-actions[bot]');
-
-            if (botComments.length === 0) {
-              throw new Error('No comments found from GitHub Actions bot.');
-            }
-
-            // Get the most recent comment
-            const latestComment = botComments[botComments.length - 1].body;
-            core.setOutput('latest-comment', latestComment);
-
-      - name: Run Python script with the comment
-        run: |
-          echo "LATEST_COMMENT=${{ steps.get-comment.outputs['latest-comment'] }}" >> $GITHUB_ENV
-          python3 print_comment.py
-        env:
-          LATEST_COMMENT: ${{ steps.get-comment.outputs['latest-comment'] }}
-
-      - name: Print comment from Python script
-        run: |
-          python3 -c "
-          import os
-          comment = os.getenv('LATEST_COMMENT')
-          print(f'The latest comment by github-actions bot: {comment}')
-          "
+      - name: Print PR number
+        run: echo "PR number is ${{ steps.get-pr.outputs.prNumber }}"
