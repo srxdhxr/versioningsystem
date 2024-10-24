@@ -102,7 +102,7 @@ jobs:
                   
                   // Format the output
                   
-                  comment += `- \`${step}\` [${currentTag}] -> [${nextPatchVersion}]\n`;
+                  comment += `- \`${step}\` [${currentTag}] -> [patch]\n`;
                 });
               } else {
                 comment += '_No matching tags found_\n';
