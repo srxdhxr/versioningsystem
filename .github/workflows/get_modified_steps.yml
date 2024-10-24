@@ -67,7 +67,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          STEPS_VERSIONS: ${{ steps.modified-folders.outputs.folders }}
+          MODIFIED_FOLDERS: ${{ steps.modified-folders.outputs.folders }}
           
 
       # - name: Create PR Comment
