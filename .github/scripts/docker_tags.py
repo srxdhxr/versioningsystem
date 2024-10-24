@@ -67,7 +67,6 @@ def main():
         results = get_docker_tags(username, folders, token)
         
         # Print results as JSON array
-        print("KLLLL")
         print(json.dumps(results))
         
     except json.JSONDecodeError as e:
