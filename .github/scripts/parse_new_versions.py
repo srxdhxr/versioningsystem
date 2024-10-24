@@ -17,7 +17,7 @@ if __name__ == "__main__":
         print(f"{step} current version: {current_version} -> new version: {new_version}")
         tag_map.append(f"{step}:{new_version}")
     
-    steps_and_versions_str = ",".join(steps_and_versions)
+    tag_str = ",".join(tag_map)
     
     # GitHub Actions requires to output the value in a special format
-    print(f"::set-output name=steps_versions::{steps_and_versions_str}")
+    print(f"::set-output name=steps_versions::{tag_str}")
