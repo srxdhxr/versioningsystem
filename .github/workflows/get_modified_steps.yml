@@ -59,64 +59,62 @@ jobs:
 
       - name: Process Docker tags
         if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
-        id: docker-tags
+        id: get-latest-tag
         run: |
-          # Run Python script and capture output
-          TAGS_OUTPUT=$(python .github/scripts/docker_tags.py \
-            '${{ steps.modified-folders.outputs.folders }}' \
-            '${{ secrets.DOCKER_USER }}' \
-            '${{ secrets.DOCKER_PWD }}')
+          python .github/scripts/get_latest_tags.py
           
-          # Save output to GITHUB_OUTPUT
-          echo "tags=$TAGS_OUTPUT" >> $GITHUB_OUTPUT
-          echo "DEBUG: Tags output: $TAGS_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          STEPS_VERSIONS: ${{ steps.modified-folders.outputs.folders }}
+          
 
-      - name: Create PR Comment
-        if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            try {
-              const folders = ${{ steps.modified-folders.outputs.folders }};
-              const tags = ${{ steps.docker-tags.outputs.tags || '[]' }};
+      # - name: Create PR Comment
+      #   if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
+      #   uses: actions/github-script@v6
+      #   with:
+      #     script: |
+      #       try {
+      #         const folders = ${{ steps.modified-folders.outputs.folders }};
+      #         const tags = ${{ steps.docker-tags.outputs.tags || '[]' }};
               
-              let comment = '## Modified Steps Check\n\n';
+      #         let comment = '## Modified Steps Check\n\n';
               
-              // Add folders section
-              comment += '### Modified Folders:\n';
-              if (folders && folders.length > 0) {
-                folders.forEach(folder => {
-                  comment += `- \`${folder}\`\n`;
-                });
-              } else {
-                comment += '_No modified folders found_\n';
-              }
+      #         // Add folders section
+      #         comment += '### Modified Folders:\n';
+      #         if (folders && folders.length > 0) {
+      #           folders.forEach(folder => {
+      #             comment += `- \`${folder}\`\n`;
+      #           });
+      #         } else {
+      #           comment += '_No modified folders found_\n';
+      #         }
               
-              // Add tags section
-              comment += '\n### Steps and Tags with Version Bump Options:\n\$$$\n';
-              if (tags && tags.length > 0) {
-                tags.forEach(([step, currentTag]) => {
-                  // Calculate the next patch version
-                  const [major, minor, patch] = currentTag.split('.').map(Number);
-                  const nextPatchVersion = `${major}.${minor}.${patch + 1}`;
+      #         // Add tags section
+      #         comment += '\n### Steps and Tags with Version Bump Options:\n\$$$\n';
+      #         if (tags && tags.length > 0) {
+      #           tags.forEach(([step, currentTag]) => {
+      #             // Calculate the next patch version
+      #             const [major, minor, patch] = currentTag.split('.').map(Number);
+      #             const nextPatchVersion = `${major}.${minor}.${patch + 1}`;
                   
-                  // Format the output
+      #             // Format the output
                   
-                  comment += `- \`${step}\` [${currentTag}] -> [patch]\n`;
-                });
-              } else {
-                comment += '_No matching tags found_\n';
-              }
+      #             comment += `- \`${step}\` [${currentTag}] -> [patch]\n`;
+      #           });
+      #         } else {
+      #           comment += '_No matching tags found_\n';
+      #         }
               
-              comment += '\n⚠️ Please review these changes carefully before merging. ';
+      #         comment += '\n⚠️ Please review these changes carefully before merging. ';
               
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: comment
-              });
-            } catch (error) {
-              core.setFailed(`Action failed with error: ${error}`);
-              console.log('Error details:', error);
-            }
+      #         await github.rest.issues.createComment({
+      #           owner: context.repo.owner,
+      #           repo: context.repo.repo,
+      #           issue_number: context.issue.number,
+      #           body: comment
+      #         });
+      #       } catch (error) {
+      #         core.setFailed(`Action failed with error: ${error}`);
+      #         console.log('Error details:', error);
+      #       }
