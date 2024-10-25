@@ -9,6 +9,8 @@ import semver
 
 def extract_versions(comment):
     # Regex to match the format: step1 | [1.0.0] [PATCH|MAJOR|MINOR|x.x.x]
+    if comment == '_No matching tags found_':
+        return "nothing to bump"
     pattern = r'(.+?) \|\s*\[(.+?)\]\s*\[(.+?)\]'
     matches = re.findall(pattern, comment)
 
@@ -20,7 +22,7 @@ def extract_versions(comment):
         # If the bump type is not valid, default it to PATCH
         if bump_type not in valid_bump_types and not re.match(r'^\d+\.\d+\.\d+$', bump_type):
             bump_type = 'PATCH'
-        
+            
         parsed_results.append((step.strip(), current_version.strip(), bump_type.strip()))
     
     return parsed_results
@@ -51,6 +53,8 @@ def increment_version(current_version: str, change_type: str) -> str:
         return str(version.bump_minor())
     elif change_type == 'PATCH':
         return str(version.bump_patch())
+    elif re.match(r'^\d+\.\d+\.\d+$', bump_type):
+        return change_type.strip()
     else:
         raise ValueError(f"Invalid change type: {change_type}")
 
