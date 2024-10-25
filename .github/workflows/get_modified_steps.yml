@@ -70,40 +70,7 @@ jobs:
           MODIFIED_FOLDERS: ${{ steps.modified-folders.outputs.folders }}
           
 
-      - name: Create Comment with Steps and Tags
-        run: |
-          try {
-            const tags = ${{ env.TAG_MAP || '[]' }};
-            
-            let comment = '## Modified Steps Check\n\n';
-            
-            // Add tags section with formatting
-            comment += '\n### Steps and Tags with Version Bump Options:\n$START\n';
-            
-            // Parse the LATEST_TAGS JSON
-            const parsedTags = JSON.parse(tags);
-            
-            if (parsedTags && parsedTags.length > 0) {
-              parsedTags.forEach(([step, currentTag]) => {
-                // Format the output: step | [latest_tag] -> ["patch"]
-                comment += `${step} | [${currentTag}]\t["patch"]\n`;
-              });
-            } else {
-              comment += '_No matching tags found_\n';
-            }
-            
-            comment += '\n⚠️ Please review these changes carefully before merging.';
-            
-            // Create a comment on the PR or issue
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: comment
-            });
-          } catch (error) {
-            core.setFailed(`Action failed with error: ${error}`);
-            console.log('Error details:', error);
-          }
+      - name: Run Create Comment Script
+        run: node .github/scripts/create_comment.js
         env:
           TAG_MAP: ${{ env.TAG_MAP }}
