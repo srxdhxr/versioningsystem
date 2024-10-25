@@ -54,7 +54,21 @@ def increment_version(current_version: str, change_type: str) -> str:
     else:
         raise ValueError(f"Invalid change type: {change_type}")
 
+def configure_git():
+    """
+    Configure git with GitHub Actions bot credentials
+    """
+    commands = [
+        ['git', 'config', '--local', 'user.email', 'github-actions[bot]@users.noreply.github.com'],
+        ['git', 'config', '--local', 'user.name', 'github-actions[bot]']
+    ]
+    
+    for cmd in commands:
+        _, stderr, code = run_command(cmd)
+        if code != 0:
+            raise RuntimeError(f"Failed to configure git: {stderr}")
 
+            
 def create_and_push_tag(step: str, version: str, github_token: str, repository: str) -> bool:
     """
     Create and push a new tag for the given step and version
