@@ -1,4 +1,4 @@
-name: Get PR Comment and Run Python Script
+name: push-new-tags-from-pr-comment
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - main
 
 permissions:
-  contents: write    # This is required for pushing tags
-  pull-requests: read  # If you need to read PR information
+  contents: write    
+  pull-requests: read  
 
 jobs:
   get-pr-comment:
@@ -75,10 +75,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install semver
 
-      - name: Extract Versions from the PR bot comment
-        id: extract-versions
+      - name: Push Latest Tags
+        id: push-tags
         run: |
-          python .github/scripts/parse_new_versions.py 
+          python .github/scripts/push_latest_tags.py 
         env:
           LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

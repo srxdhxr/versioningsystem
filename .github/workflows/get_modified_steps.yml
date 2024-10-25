@@ -58,7 +58,7 @@ jobs:
           pip install requests
           pip install semver
 
-      - name: Process Docker tags
+      - name: get-latest-tags
         if: fromJSON(steps.modified-folders.outputs.folders) != '[]'
         id: get-latest-tag
         run: |
