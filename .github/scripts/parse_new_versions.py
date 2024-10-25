@@ -2,6 +2,10 @@ import sys
 import re
 import os
 import json
+import subprocess
+from typing import List, Tuple
+import semver
+
 
 def extract_versions(comment):
     # Regex to match the format: step1 | [1.0.0] [PATCH|MAJOR|MINOR|x.x.x]
@@ -21,21 +25,107 @@ def extract_versions(comment):
     
     return parsed_results
 
+def run_command(command: List[str]) -> Tuple[str, str, int]:
+    """
+    Run a shell command and return stdout, stderr, and return code
+    """
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+    stdout, stderr = process.communicate()
+    return stdout.strip(), stderr.strip(), process.returncode
+
+
+def increment_version(current_version: str, change_type: str) -> str:
+    """
+    Increment the version based on the change type
+    """
+    version = semver.VersionInfo.parse(current_version)
+    
+    if change_type == 'major':
+        return str(version.bump_major())
+    elif change_type == 'minor':
+        return str(version.bump_minor())
+    elif change_type == 'patch':
+        return str(version.bump_patch())
+    else:
+        raise ValueError(f"Invalid change type: {change_type}")
+
+
+def create_and_push_tag(step: str, version: str, github_token: str, repository: str) -> bool:
+    """
+    Create and push a new tag for the given step and version
+    """
+    tag_name = f"{step}-v{version}"
+    
+    # Set the remote URL with authentication
+    remote_url = f"https://x-access-token:{github_token}@github.com/{repository}.git"
+    _, stderr, code = run_command(['git', 'remote', 'set-url', 'origin', remote_url])
+    if code != 0:
+        print(f"Failed to set remote URL: {stderr}")
+        return False
+    
+    # Delete tag if it exists locally
+    run_command(['git', 'tag', '-d', tag_name])
+    
+    # Create new tag
+    _, stderr, code = run_command(['git', 'tag', tag_name])
+    if code != 0:
+        print(f"Failed to create tag: {stderr}")
+        return False
+    
+    # Push tag to remote
+    _, stderr, code = run_command(['git', 'push', 'origin', tag_name, '--force'])
+    if code != 0:
+        print(f"Failed to push tag: {stderr}")
+        return False
+    
+    return True
+
+
 if __name__ == "__main__":
     comments = os.getenv('LATEST_COMMENT')
+    github_token = os.environ.get('GITHUB_TOKEN')
+    repository = os.environ.get('GITHUB_REPOSITORY') 
 
-    if not comments:
+    if not all([github_token, repository, comments]):
         print("No comment found in environment variable 'LATEST_COMMENT'", file=sys.stderr)
         sys.exit(1)
+
+    # Configure git
+    configure_git()
+    
 
     versions = extract_versions(comments)
     tag_map = []
 
     for step, current_version, bump_type in versions:
-        print(f"{step} current version: {current_version}, bump type: {bump_type}")
-        tag_map.append([step, bump_type])
+        print(f"\nProcessing: Step={step}, Change Type={change_type}")
+        
+        try:
+            # Get current version
+            print(f"Current version: {current_version}")
+            
+            # Calculate new version
+            new_version = increment_version(current_version, bump_type)
+            print(f"New version: {new_version}")
+            
+            # Create and push tag
+            if create_and_push_tag(step, new_version, github_token, repository):
+                print(f"✅ Successfully created and pushed tag for {step}-v{new_version}")
+            else:
+                print(f"❌ Failed to create/push tag for {step}")
+                sys.exit(1)
+                
+        except Exception as e:
+            print(f"Error processing {step}: {str(e)}")
+            sys.exit(1)
     
-    # Output as a JSON string
-    tag_json = json.dumps(tag_map)
-    
-    print(f"INFO: Tag parsed\n {tag_json}")
+    # List all tags at the end
+    stdout, _, _ = run_command(['git', 'tag', '-l'])
+    print("\nFinal list of tags:")
+    print(stdout)
+
