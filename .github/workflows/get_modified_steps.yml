@@ -83,14 +83,14 @@ jobs:
 
             if (tags.length > 0) {
               tags.forEach(([step, currentTag]) => {
-                comment += `${step} | [${currentTag}]\t['patch']\n`;
+                comment += `${step} | [${currentTag}]\t[PATCH|MAJOR|MINOR|x.x.x]\n`;
               });
             } else {
               comment += '_No matching tags found_\n';
             }
 
             comment += '\n$END\n⚠️ Please review these changes carefully before merging.';
-
+            comment += '\nSet either PATCH, MAJOR or MINOR or a specific version in the format x.x.x\n';
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
