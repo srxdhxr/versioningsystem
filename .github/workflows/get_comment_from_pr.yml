@@ -78,7 +78,7 @@ jobs:
       - name: Extract Versions from the PR bot comment
         id: extract-versions
         run: |
-          python .github/scripts/parse_new_version.py 
+          python .github/scripts/parse_new_versions.py 
         env:
           LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
