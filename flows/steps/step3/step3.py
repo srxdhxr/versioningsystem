@@ -1,1 +1,1 @@
-print("this is sparta!")
+print("this idrta!")
