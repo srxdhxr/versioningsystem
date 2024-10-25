@@ -68,7 +68,7 @@ def configure_git():
         if code != 0:
             raise RuntimeError(f"Failed to configure git: {stderr}")
 
-            
+
 def create_and_push_tag(step: str, version: str, github_token: str, repository: str) -> bool:
     """
     Create and push a new tag for the given step and version
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     tag_map = []
 
     for step, current_version, bump_type in versions:
-        print(f"\nProcessing: Step={step}, Change Type={change_type}")
+        print(f"\nProcessing: Step={step}, Change Type={bump_type}")
         
         try:
             # Get current version
