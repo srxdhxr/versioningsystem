@@ -45,11 +45,11 @@ def increment_version(current_version: str, change_type: str) -> str:
     """
     version = semver.VersionInfo.parse(current_version)
     
-    if change_type == 'major':
+    if change_type == 'MAJOR':
         return str(version.bump_major())
-    elif change_type == 'minor':
+    elif change_type == 'MINOR':
         return str(version.bump_minor())
-    elif change_type == 'patch':
+    elif change_type == 'PATCH':
         return str(version.bump_patch())
     else:
         raise ValueError(f"Invalid change type: {change_type}")
