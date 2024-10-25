@@ -23,8 +23,8 @@ jobs:
         id: modified-folders
         run: |
           # Fetch the modified folders between the base and head commits
-          MODIFIED_FOLDERS=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} flows/steps/ | cut -d'/' -f3 | sort | uniq | grep -v '^$' || true)
-          
+          MODIFIED_FOLDERS=$(git diff --name-only --diff-filter=AM ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} flows/steps/ | cut -d'/' -f3 | sort | uniq | grep -v '^$' || true)
+
           echo "DEBUG: Raw MODIFIED_FOLDERS content:"
           echo "$MODIFIED_FOLDERS"
 
@@ -37,13 +37,10 @@ jobs:
 
           # Convert the list of folders (with newlines) into a JSON array
           FOLDERS_JSON=$(echo "$MODIFIED_FOLDERS" | jq -R . | jq -s . | jq -c .)
-          
+
           # Output the folders as JSON to GitHub Actions output
           echo "folders=${FOLDERS_JSON}" >> $GITHUB_OUTPUT
           echo "DEBUG: Modified folders: ${FOLDERS_JSON}"
-
-
-
 
       - name: Set up Python
         if: fromJSON(steps.modified-folders.outputs.folders) != '[]'

@@ -9,7 +9,7 @@ fi
 VERSION=$1
 
 # Define your Docker repository (change to your Docker Hub username)
-DOCKER_REPO="srxdhxr/step3"
+DOCKER_REPO="srxdhxr/step1"
 
 # Build Docker image with version tag
 docker build -t $DOCKER_REPO:$VERSION .
