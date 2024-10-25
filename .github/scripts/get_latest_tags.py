@@ -25,7 +25,6 @@ def get_current_version(step: str) -> str:
     Returns '1.0.0' if no tags exist.
     """
     stdout, _, _ = run_command(['git', 'tag', '-l', f'{step}-v*'])
-    print(tag)
     if not stdout:
         return '1.0.0'
     
@@ -67,7 +66,7 @@ def main():
     repository = os.environ.get('GITHUB_REPOSITORY')
     modified_folders = os.environ.get('MODIFIED_FOLDERS')
     
-    if not all([github_token, repository, steps_versions]):
+    if not all([github_token, repository, modified_folders]):
         print("Missing required environment variables")
         sys.exit(1)
     
@@ -80,6 +79,19 @@ def main():
         print(f"Failed to parse STEPS_VERSIONS JSON: {e}")
         print(f"Received content: {steps_versions}")
         sys.exit(1)
-    
+    tag_map = []
     for folder in folders:
-        print(folder)
+        print(f"Getting latest git tag for the folder: {folder}\n")
+        latest_tag = get_current_version(folder)
+        print(f"The latest tag is {latest_tag} for {folder}\n\n")
+        tag_map.append([folder,latest_tag])
+
+    tag_json = json.dumps(tag_map)
+    print(f"INFO: tag_map = \n{tag_json}")
+    with open(os.environ['GITHUB_ENV'], 'a') as env_file:
+        env_file.write(f"TAG_MAP={tag_json}\n")
+
+
+
+if __name__ == "__main__":
+    main()

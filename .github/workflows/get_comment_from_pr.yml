@@ -78,15 +78,10 @@ jobs:
       - name: Extract Versions from the PR bot comment
         id: extract-versions
         run: |
-          python .github/scripts/parse_new_versions.py 
+          python .github/scripts/parse_new_version.py 
         env:
           LATEST_COMMENT: ${{ env.LATEST_COMMENT }}
-      
-      - name: Update Tags
-        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          STEPS_VERSIONS: ${{ steps.extract-versions.outputs.steps_versions }}
-        run: |
-          python .github/scripts/tag_updater.py
+      
           
