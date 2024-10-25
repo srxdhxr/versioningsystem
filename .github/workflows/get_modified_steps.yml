@@ -89,7 +89,7 @@ jobs:
               comment += '_No matching tags found_\n';
             }
 
-            comment += '\n⚠️ Please review these changes carefully before merging.';
+            comment += '\n⚠️ Please review these changes carefully before merging.\n$END\n';
 
             github.rest.issues.createComment({
               owner: context.repo.owner,
