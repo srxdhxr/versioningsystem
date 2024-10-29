@@ -48,7 +48,8 @@ def get_step_versions() -> List[List[str]]:
     if return_code != 0:
         print(f"Error getting tags: {stderr}")
         return []
-    
+    print("Here")
+
     if not stdout:
         return []
 
