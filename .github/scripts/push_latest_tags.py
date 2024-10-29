@@ -75,7 +75,16 @@ def configure_git():
 
 def create_and_push_tag(step: str, version: str, github_token: str, repository: str) -> bool:
     """
-    Create and push a new tag for the given step and version
+    Create and push a new tag for the given step and version on the main branch
+    
+    Args:
+        step (str): The step name
+        version (str): The version to tag
+        github_token (str): GitHub authentication token
+        repository (str): GitHub repository in format 'owner/repo'
+    
+    Returns:
+        bool: True if successful, False otherwise
     """
     tag_name = f"{step}-v{version}"
     
@@ -85,9 +94,30 @@ def create_and_push_tag(step: str, version: str, github_token: str, repository: 
     if code != 0:
         print(f"Failed to set remote URL: {stderr}")
         return False
+
+    # Fetch latest changes
+    _, stderr, code = run_command(['git', 'fetch', 'origin', 'main'])
+    if code != 0:
+        print(f"Failed to fetch main branch: {stderr}")
+        return False
+
+    # Checkout main branch
+    _, stderr, code = run_command(['git', 'checkout', 'main'])
+    if code != 0:
+        print(f"Failed to checkout main branch: {stderr}")
+        return False
+
+    # Pull latest changes
+    _, stderr, code = run_command(['git', 'pull', 'origin', 'main'])
+    if code != 0:
+        print(f"Failed to pull latest changes: {stderr}")
+        return False
     
     # Delete tag if it exists locally
     run_command(['git', 'tag', '-d', tag_name])
+    
+    # Delete tag if it exists remotely
+    run_command(['git', 'push', 'origin', ':refs/tags/' + tag_name])
     
     # Create new tag
     _, stderr, code = run_command(['git', 'tag', tag_name])
@@ -96,7 +126,7 @@ def create_and_push_tag(step: str, version: str, github_token: str, repository: 
         return False
     
     # Push tag to remote
-    _, stderr, code = run_command(['git', 'push', 'origin', tag_name, '--force'])
+    _, stderr, code = run_command(['git', 'push', 'origin', tag_name])
     if code != 0:
         print(f"Failed to push tag: {stderr}")
         return False
