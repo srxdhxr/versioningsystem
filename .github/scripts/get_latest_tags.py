@@ -18,41 +18,56 @@ def run_command(command: List[str]) -> Tuple[str, str, int]:
     stdout, stderr = process.communicate()
     return stdout.strip(), stderr.strip(), process.returncode
 
-
-import semver
-from typing import List
-
 def get_step_versions() -> List[List[str]]:
     """
     Get the latest version for each step in the repository.
     Returns a list of lists in the format [[stepname, version]].
+    
+    Example tags:
+    step1-v1.0.0
+    step1-v1.1.0
+    step2-v0.1.0
+    
+    Would return: [["step1", "1.1.0"], ["step2", "0.1.0"]]
     """
-    stdout, _, _ = run_command(['git', 'tag', '-l'])
+    stdout, stderr, return_code = run_command(['git', 'tag', '-l'])
+    if return_code != 0:
+        print(f"Error getting tags: {stderr}")
+        return []
+    
     if not stdout:
         return []
 
     step_versions = {}
     for tag in stdout.split('\n'):
+        # Skip empty tags
+        if not tag:
+            continue
+            
         # Look for tags in the format "stepname-vX.Y.Z"
-        if "-v" in tag:
-            try:
-                # Extract stepname and versio
-                stepname, version = tag.rsplit("-v", 1)
-                semver.VersionInfo.parse(version) 
-                if stepname in step_versions:
-                    # Update
-                    current_version = step_versions[stepname]
-                    if semver.VersionInfo.parse(version) > semver.VersionInfo.parse(current_version):
-                        step_versions[stepname] = version
-                else:
-                    step_versions[stepname] = version
-            except ValueError:
-                continue  
-    # Convert the dictionary to a list of lists
-    return [[step, version] for step, version in step_versions.items()]
+        if not tag.count("-v") == 1:
+            continue
+            
+        try:
+            # Split on last occurrence of "-v" to handle stepnames that might contain "-v"
+            stepname, version = tag.rsplit("-v", 1)
+            
+            # Validate version with semver
+            parsed_version = semver.VersionInfo.parse(version)
+            
+            if stepname in step_versions:
+                current_version = step_versions[stepname][1]  # Get the version string
+                if semver.VersionInfo.parse(version) > semver.VersionInfo.parse(current_version):
+                    step_versions[stepname] = (stepname, version)
+            else:
+                step_versions[stepname] = (stepname, version)
+                
+        except (ValueError, semver.ParseError):
+            print(f"Warning: Skipping invalid tag format: {tag}")
+            continue
 
-
-
+    # Convert the dictionary to a sorted list of lists
+    return sorted([[step, version] for step, version in step_versions.values()])
 
 def configure_git():
     """
@@ -68,8 +83,6 @@ def configure_git():
         if code != 0:
             raise RuntimeError(f"Failed to configure git: {stderr}")
 
-
-
 def main():
     # Get environment variables
     github_token = os.environ.get('GITHUB_TOKEN')
@@ -81,6 +94,10 @@ def main():
     
     # Configure git
     configure_git()
+
+    # Get and print tags for debugging
+    stdout, _, _ = run_command(['git', 'tag', '-l'])
+    print(f"DEBUG: All tags in repository:\n{stdout}")
 
     tag_map = get_step_versions()
     
