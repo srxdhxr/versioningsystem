@@ -5,7 +5,7 @@ import sys
 import semver
 from typing import List, Tuple
 from pathlib import Path
-
+import os
 def run_command(command: List[str]) -> Tuple[str, str, int]:
     """
     Run a shell command and return stdout, stderr, and return code
