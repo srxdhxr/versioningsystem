@@ -40,6 +40,7 @@ def get_step_versions() -> List[List[str]]:
 
     step_versions = {}
     for tag in stdout.split('\n'):
+        print(tag)
         # Skip empty tags
         if not tag:
             continue
