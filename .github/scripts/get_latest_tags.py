@@ -22,19 +22,21 @@ def get_step_versions() -> List[List[str]]:
     """
     Get the latest version for each step from the main branch.
     Returns a list of lists in the format [[stepname, version]].
-    
-    Example tags:
-    step1-v1.0.0
-    step1-v1.1.0
-    step2-v0.1.0
-    
-    Would return: [["step1", "1.1.0"], ["step2", "0.1.0"]]
     """
-    # Fetch latest main branch
-    _, stderr, return_code = run_command(['git', 'fetch', 'origin', 'main'])
+    # Debug: Print all tags first
+    stdout, stderr, return_code = run_command(['git', 'tag', '-l'])
+    print(f"DEBUG: Initial tags in repository:\n{stdout}")
+    
+    # Fetch latest main branch and tags
+    print("Fetching latest main branch and tags...")
+    _, stderr, return_code = run_command(['git', 'fetch', '--tags', 'origin', 'main'])
     if return_code != 0:
         print(f"Error fetching main branch: {stderr}")
         return []
+    
+    # Debug: Print tags after fetch
+    stdout, stderr, return_code = run_command(['git', 'tag', '-l'])
+    print(f"DEBUG: Tags after fetch:\n{stdout}")
         
     # Get the commit hash of the main branch
     stdout, stderr, return_code = run_command(['git', 'rev-parse', 'origin/main'])
@@ -42,44 +44,38 @@ def get_step_versions() -> List[List[str]]:
         print(f"Error getting main branch commit: {stderr}")
         return []
     main_commit = stdout.strip()
+    print(f"DEBUG: Main branch commit: {main_commit}")
     
-    # Get all tags that point to commits in main branch history
-    stdout, stderr, return_code = run_command(['git', 'tag', '--contains', main_commit])
+    # Get all tags
+    stdout, stderr, return_code = run_command(['git', 'tag', '--points-at', main_commit])
     if return_code != 0:
         print(f"Error getting tags: {stderr}")
         return []
-    print("Here")
 
     if not stdout:
-        return []
+        print("DEBUG: No tags found pointing to main branch")
+        # Fallback to getting all tags
+        stdout, stderr, return_code = run_command(['git', 'tag', '-l'])
+        if return_code != 0 or not stdout:
+            print("DEBUG: No tags found at all")
+            return []
 
     step_versions = {}
     for tag in stdout.split('\n'):
         print(f"Processing tag: {tag}")
-        # Skip empty tags
         if not tag:
             continue
             
-        # Look for tags in the format "stepname-vX.Y.Z"
         if not tag.count("-v") == 1:
             print(f"Skipping tag with invalid format: {tag}")
             continue
             
         try:
-            # Split on last occurrence of "-v" to handle stepnames that might contain "-v"
             stepname, version = tag.rsplit("-v", 1)
-            
-            # Validate version with semver
             parsed_version = semver.VersionInfo.parse(version)
             
-            # Verify tag is on main branch
-            _, stderr, return_code = run_command(['git', 'merge-base', '--is-ancestor', f'{tag}^{{commit}}', 'origin/main'])
-            if return_code != 0:
-                print(f"Skipping tag not in main branch history: {tag}")
-                continue
-            
             if stepname in step_versions:
-                current_version = step_versions[stepname][1]  # Get the version string
+                current_version = step_versions[stepname][1]
                 current_parsed = semver.VersionInfo.parse(current_version)
                 if parsed_version > current_parsed:
                     print(f"Updating {stepname} from version {current_version} to {version}")
@@ -92,7 +88,6 @@ def get_step_versions() -> List[List[str]]:
             print(f"Warning: Skipping invalid tag format: {tag} (Error: {str(e)})")
             continue
 
-    # Convert the dictionary to a sorted list of lists
     result = sorted([[step, version] for step, version in step_versions.values()])
     print(f"Final result: {result}")
     return result

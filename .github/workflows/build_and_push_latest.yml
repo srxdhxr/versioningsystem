@@ -13,7 +13,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
+        with:
+          fetch-depth: 0  # This is crucial - fetches all history and tags
+          
+      - name: Fetch all tags
+        run: |
+          git fetch --prune --unshallow --tags
+          git tag -l  # Debug: list all tags
+          
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -35,8 +42,7 @@ jobs:
           
       - name: Print latest tags
         run: |
-          echo "Latest tags: $STEP_VERSIONS"
-          echo "$STEP_VERSIONS" | jq '.'
+          echo "Latest tags: $TAG_MAP"  # Note: changed from STEP_VERSIONS to TAG_MAP
+          echo "$TAG_MAP" | jq '.'
         env:
-          STEP_VERSIONS: ${{ env.STEP_VERSIONS }}
-          
+          TAG_MAP: ${{ env.TAG_MAP }}
