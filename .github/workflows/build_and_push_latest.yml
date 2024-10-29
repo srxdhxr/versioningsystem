@@ -41,4 +41,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           REGISTRY: "srxdhxr"
-          PROJECT_DIR: "../flows/steps"
+          PROJECT_DIR: "../../flows/steps"
