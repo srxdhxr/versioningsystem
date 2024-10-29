@@ -1,0 +1,42 @@
+name: build-and-push-latest-steps
+
+on:
+  workflow_run:
+    workflows: ["push-new-tags-from-pr-comment"]
+    types:
+      - completed
+
+jobs:
+  get-latest-step-tags:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+          pip install semver
+
+      - name: Get latest tags
+        id: get-latest-tag
+        run: |
+          python .github/scripts/get_latest_tags.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          
+      - name: Print latest tags
+        run: |
+          echo "Latest tags: $STEP_VERSIONS"
+          echo "$STEP_VERSIONS" | jq '.'
+        env:
+          STEP_VERSIONS: ${{ env.STEP_VERSIONS }}
+          
