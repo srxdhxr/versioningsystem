@@ -1,1 +1,1 @@
-print("this is sparta 222!")
+print("this is sparta 222s!")
