@@ -215,15 +215,6 @@ def main():
         for step_name, version in steps:
             step_path = Path(project_dir) / step_name
             
-            if not step_path.exists():
-                print(f"Step directory not found: {step_path}")
-                results.append((step_name, version, False))
-                continue
-                
-            if not (step_path / 'Dockerfile').exists():
-                print(f"Dockerfile not found in {step_path}")
-                results.append((step_name, version, False))
-                continue
             
             success = build_and_push(
                 path=str(step_path),
