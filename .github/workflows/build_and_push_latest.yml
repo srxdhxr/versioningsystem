@@ -31,18 +31,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
           pip install semver
+          pip install docker
 
       - name: Get latest tags
         id: get-latest-tag
         run: |
-          python .github/scripts/get_latest_tags.py
+          python .github/scripts/build_and_push.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          
-      - name: Print latest tags
-        run: |
-          echo "Latest tags: $TAG_MAP"  # Note: changed from STEP_VERSIONS to TAG_MAP
-          echo "$TAG_MAP" | jq '.'
-        env:
-          TAG_MAP: ${{ env.TAG_MAP }}
+          REGISTRY: "srxdhxr"
+          PROJECT_DIR: "../flows/steps"
