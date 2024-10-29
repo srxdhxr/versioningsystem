@@ -6,7 +6,7 @@ import semver
 from typing import List, Tuple
 from pathlib import Path
 import os
-from docker.errors import BuildError
+from docker.errors import BuildError, APIError
 
 
 def run_command(command: List[str]) -> Tuple[str, str, int]:
@@ -128,40 +128,39 @@ def build_and_push(
     version: str,
     registry: str = "docker.cloud.reveliolabs.com:5000",
     quiet: bool = False,
-    user = 'foo',
-    pwd = ''
-):
+    user='foo',
+    pwd=''
+) -> bool:
     client = docker.from_env()
     full_image_name = f"{registry}/{project}:{version}"
 
+    # Check if the image already exists locally
     if image_exists_locally(client, full_image_name):
         print(f"Image {full_image_name} already exists. Skipping build.")
-    else:
+        return True  # Image already exists, no need to build and push
+
+    try:
+        # Login to registry if credentials are provided
         if user != 'foo':
-            client.login(username=user,password = pwd)
+            client.login(username=user, password=pwd)
         else:
             client.login(username=user, registry=registry)
 
+        # Build the Docker image
         print(f"Starting build for {project}, version: {version}")
-        print("Running docker build at path: %s", path)
-        # Should raise 3an error if failed
-        try:
-            _, logs = client.images.build(
-                path=path,
-                tag=f"{registry}/{project}:{version}",
-                quiet=quiet,
-                nocache=False,
-            )
-            for log_line in logs:
-               print(log_line)
+        print("Running docker build at path:", path)
+        _, logs = client.images.build(
+            path=path,
+            tag=full_image_name,
+            quiet=quiet,
+            nocache=False,
+        )
+        for log_line in logs:
+            if "stream" in log_line:
+                print(log_line["stream"].strip())
 
-        except BuildError as e:
-            print("Something went wrong with image build!")
-            for line in e.build_log:
-                if "stream" in line:
-                    print(line["stream"].strip())
-            raise e
-
+        # Push the Docker image to the registry
+        print("Pushing the Docker image to registry...")
         push_resp = client.images.push(
             f"{registry}/{project}",
             tag=version,
@@ -171,7 +170,22 @@ def build_and_push(
         for line in push_resp:
             print(line)
             if line.get("error"):
-                raise RuntimeError("Push failed!")
+                print("Push error:", line["error"])
+                return False
+    except BuildError as e:
+        print("Something went wrong with image build!")
+        for line in e.build_log:
+            if "stream" in line:
+                print(line["stream"].strip())
+        return False  
+
+    except APIError as e:
+        print("An error occurred during the Docker push!")
+        print(e)
+        return False  
+
+    print("Image built and pushed successfully.")
+    return True  
 
 
 def process_tag_map(tag_map_str: str) -> List[Tuple[str, str]]:
