@@ -134,8 +134,10 @@ def build_and_push(
     if image_exists_locally(client, full_image_name):
         print(f"Image {full_image_name} already exists. Skipping build.")
     else:
-
-        client.login(username=user, registry=registry,password = pwd)
+        if user != 'foo':
+            client.login(registry=registry,password = pwd)
+        else:
+            client.login(username=username, password=password)
 
         print(f"Starting build for {project}, version: {version}")
         print("Running docker build at path: %s", path)
@@ -143,7 +145,7 @@ def build_and_push(
         try:
             _, logs = client.images.build(
                 path=path,
-                tag=f"docker.cloud.reveliolabs.com:5000/{project}:{version}",
+                tag=f"{registry}/{project}:{version}",
                 quiet=quiet,
                 nocache=False,
             )
