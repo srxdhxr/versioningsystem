@@ -125,6 +125,8 @@ def build_and_push(
     version: str,
     registry: str = "docker.cloud.reveliolabs.com:5000",
     quiet: bool = False,
+    user = 'foo',
+    pwd = ''
 ):
     client = docker.from_env()
     full_image_name = f"{registry}/{project}:{version}"
@@ -133,7 +135,7 @@ def build_and_push(
         print(f"Image {full_image_name} already exists. Skipping build.")
     else:
 
-        client.login(username="foo", registry=registry)
+        client.login(username=user, registry=registry,password = pwd)
 
         print(f"Starting build for {project}, version: {version}")
         print("Running docker build at path: %s", path)
@@ -195,6 +197,8 @@ def main():
     repository = os.environ.get('GITHUB_REPOSITORY')
     project_dir = os.environ.get('PROJECT_DIR')
     registry = os.environ.get('REGISTRY')
+    user = os.environ.get('DOCKER_USER')
+    pwd = os.environ.get('DOCKER_PWD')
 
     if not all([github_token, repository,project_dir,registry]):
         print("Missing required environment variables")
@@ -220,7 +224,9 @@ def main():
                 path=str(step_path),
                 project=step_name,
                 version=version,
-                registry=registry
+                registry=registry,
+                user = user,
+                pwd = pwd
             )
             
             results.append((step_name, version, success))

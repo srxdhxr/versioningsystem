@@ -42,3 +42,5 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           REGISTRY: "srxdhxr"
           PROJECT_DIR: "../../flows/steps"
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PWD: ${{ secrets.DOCKER_PWD }}
