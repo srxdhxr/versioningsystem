@@ -1,1 +1,1 @@
-print("qt12ccc")
+print("bbb")
