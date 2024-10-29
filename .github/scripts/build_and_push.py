@@ -213,7 +213,7 @@ def main():
         
         # Process each step
         for step_name, version in steps:
-            step_path = Path(step_dir) / step_name
+            step_path = Path(project_dir) / step_name
             
             if not step_path.exists():
                 print(f"Step directory not found: {step_path}")
