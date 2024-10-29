@@ -135,9 +135,9 @@ def build_and_push(
         print(f"Image {full_image_name} already exists. Skipping build.")
     else:
         if user != 'foo':
-            client.login(registry=registry,password = pwd)
+            client.login(username=user,password = pwd)
         else:
-            client.login(username=username, password=password)
+            client.login(username=user, registry=registry)
 
         print(f"Starting build for {project}, version: {version}")
         print("Running docker build at path: %s", path)
