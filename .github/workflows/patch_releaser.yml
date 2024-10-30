@@ -1,30 +1,30 @@
-name: detect-modified-steps
+name: Push Latest Tags on Branch Push (Steps Folder Only)
 
 on:
-  pull_request:
-    branches: 
-      - sridhar/flowversionsystem
-    paths:
+  push:
+    branches-ignore:
+      - 'main'
+    paths:            
       - 'flows/steps/**'
 
 jobs:
-  check-modified-folders:
+  push-latest-tags:
     runs-on: ubuntu-latest
     permissions:
+      contents: write
       pull-requests: write
-      contents: read
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Fetch enough history to compare the last two commits
 
       - name: Find modified folders
         id: modified-folders
         run: |
-          # Fetch the modified folders between the base and head commits
-          MODIFIED_FOLDERS=$(git diff --name-only --diff-filter=AM ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} flows/steps/ | cut -d'/' -f3 | sort | uniq | grep -v '^$' || true)
+          # Fetch the modified folders between the previous and current commits
+          MODIFIED_FOLDERS=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD flows/steps/ | cut -d'/' -f3 | sort | uniq | grep -v '^$' || true)
 
           echo "DEBUG: Raw MODIFIED_FOLDERS content:"
           echo "$MODIFIED_FOLDERS"
@@ -67,33 +67,12 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           MODIFIED_FOLDERS: ${{ steps.modified-folders.outputs.folders }}
           
-
-      - name: Create Comment with Steps and Tags
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const tags = JSON.parse(process.env.TAG_MAP || '[]');
-
-            let comment = '## Modified Steps Check\n\n';
-
-            // Add tags section with formatting
-            comment += '\n### Steps and Tags with Version Bump Options:\n$START\n';
-
-            if (tags.length > 0) {
-              tags.forEach(([step, currentTag]) => {
-                comment += `${step} | [${currentTag}]\t[PATCH|MAJOR|MINOR|x.x.x]\n`;
-              });
-            } else {
-              comment += '_No matching tags found_\n';
-            }
-
-            comment += '\n$END\n⚠️ Please review these changes carefully before merging.';
-            comment += '\nSet either PATCH, MAJOR or MINOR or a specific version in the format x.x.x\n';
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: comment
-            });
+      - name: Push Latest Tags
+        id: push-tags
+        run: |
+          python .github/scripts/push_latest_tags.py 
         env:
-          TAG_MAP: ${{ env.TAG_MAP }}
+          LATEST_COMMENT: "NA"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          CURRENT_TAG_MAP: "${{ env.TAG_MAP }}"

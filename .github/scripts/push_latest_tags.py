@@ -138,6 +138,7 @@ if __name__ == "__main__":
     comments = os.getenv('LATEST_COMMENT')
     github_token = os.environ.get('GITHUB_TOKEN')
     repository = os.environ.get('GITHUB_REPOSITORY') 
+    current_tag_map = os.environ.get('CURRENT_TAG_MAP')
 
     if not all([github_token, repository, comments]):
         print("No comment found in environment variable 'LATEST_COMMENT'", file=sys.stderr)
@@ -146,8 +147,15 @@ if __name__ == "__main__":
     # Configure git
     configure_git()
     
-
-    versions = extract_versions(comments)
+    if current_tag_map == 'NA':
+        versions = extract_versions(comments)
+    else:
+        versions = json.loads(current_tag_map)
+    
+    for v in versions:
+        v.append('PATCH')
+    
+    print(versions)
     tag_map = []
 
     for step, current_version, bump_type in versions:
@@ -176,4 +184,3 @@ if __name__ == "__main__":
     stdout, _, _ = run_command(['git', 'tag', '-l'])
     print("\nFinal list of tags:")
     print(stdout)
-

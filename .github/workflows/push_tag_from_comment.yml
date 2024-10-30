@@ -3,7 +3,7 @@ name: push-new-tags-from-pr-comment
 on:
   push:
     branches:
-      - main
+      - sridhar/flowversionsystem
 
 permissions:
   contents: write    
